@@ -21,10 +21,21 @@ window.filtrarCategoria = function(categoria, boton) {
 function aplicarFiltrosProductos() {
     let listaFiltrada = window.productosGlobal ?? [];
 
-    if (categoriaActualFiltro !== 'TODOS') {
-        listaFiltrada = listaFiltrada.filter(p =>
-            (p.categoria ?? '').toUpperCase().trim() === categoriaActualFiltro.toUpperCase().trim()
-        );
+    // Normalizamos el filtro seleccionado a mayúsculas y quitamos espacios
+    const filtroUpper = (categoriaActualFiltro ?? '').toUpperCase().trim();
+
+    // Validamos que no sea ni 'TODOS' ni 'TODAS'
+    if (filtroUpper !== 'TODOS' && filtroUpper !== 'TODAS' && filtroUpper !== '') {
+        listaFiltrada = listaFiltrada.filter(p => {
+            const catProducto = (p.categoria ?? '').toUpperCase().trim();
+
+            // Quitamos la 'S' final si existe para comparar en singular (ej: "URBANAS" -> "URBANA")
+            const catProductoSinS = catProducto.replace(/S$/, '');
+            const filtroSinS = filtroUpper.replace(/S$/, '');
+
+            // Compara si coinciden ignorando si está en plural o singular
+            return catProductoSinS === filtroSinS || catProducto.includes(filtroSinS);
+        });
     }
 
     const inputBuscar = document.getElementById('input-buscar-tienda');
@@ -99,26 +110,38 @@ window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 320
 };
 
 // Inicialización general al cargar la página (Barra de navegación + Estado de sesión + Carga de tienda)
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Validar autenticación primero para determinar permisos de Admin
-    try {
-        const respuesta = await fetch('/api/auth/me', { credentials: 'include' });
-        if (respuesta.ok) {
-            const usuario = await respuesta.json();
-            window.usuarioEsAdminGlobal = usuario.roles?.includes('ROLE_ADMIN') || usuario.rol === 'ADMIN' || usuario.esAdmin || false;
-            window.usuarioActual = usuario;
-        } else {
-            window.usuarioEsAdminGlobal = false;
-        }
-    } catch (error) {
-        console.error("Error obteniendo datos del usuario:", error);
-        window.usuarioEsAdminGlobal = false;
-    }
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Obtener la cadena almacenada en localStorage (asegúrate de usar la misma clave 'usuario' o 'user' con la que guardaste en login)
+  const usuarioStorage = localStorage.getItem('usuario'); 
 
-    // 2. Cargar los productos una vez confirmado el estado del usuario
-    if (typeof cargarProductos === 'function') {
-        await cargarProductos();
+  if (usuarioStorage) {
+    try {
+      // 2. Parsear a objeto JSON
+      const usuario = JSON.parse(usuarioStorage);
+
+      // 3. Actualizar la interfaz de usuario
+      // Ejemplo para perfil.html:
+      const rolBadge = document.getElementById('rol-badge'); // O el id de tu elemento
+      if (rolBadge && usuario.rol) {
+        rolBadge.textContent = usuario.rol; // Muestra 'ADMIN', 'CLIENTE', etc.
+      }
+
+      // Ejemplo para index.html (mostrar perfil en lugar de "Iniciar Sesión"):
+      const navLoginLink = document.getElementById('nav-login-link');
+      if (navLoginLink) {
+        navLoginLink.textContent = `Hola, ${usuario.nombre || 'Mi Perfil'}`;
+        navLoginLink.href = 'perfil.html';
+      }
+
+    } catch (e) {
+      console.error('Error al parsear la información del usuario:', e);
     }
+  } else {
+    // Si no hay usuario en sesión y está en perfil.html, redirigir a login
+    if (window.location.pathname.includes('perfil.html')) {
+      window.location.href = 'login.html';
+    }
+  }
 });
 
 // Función global para Cerrar Sesión
