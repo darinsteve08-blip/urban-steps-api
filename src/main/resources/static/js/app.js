@@ -1,12 +1,205 @@
+// ==========================================
+// ESTADO GLOBAL Y VARIABLES
+// ==========================================
 let categoriaActualFiltro = 'TODOS';
 let ordenActualProductos = 'FECHA_DESC';
 window.usuarioEsAdminGlobal = false;
+window.productosGlobal = [];
 
-// Función global para filtrar por categoría (Casual, Deportivo, Urbano, etc.)
+// ==========================================
+// INICIALIZACIÓN (DOMContentLoaded)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarSesion();
+    cargarProductos();
+    verificarAccesoAdminUI();
+});
+
+// ==========================================
+// MANEJO SEGURO DE SESIÓN
+// ==========================================
+function obtenerUsuarioSesion() {
+    try {
+        const usuarioStorage = localStorage.getItem('usuario');
+        return usuarioStorage ? JSON.parse(usuarioStorage) : null;
+    } catch (error) {
+        console.error('Error al procesar la sesión local:', error);
+        localStorage.removeItem('usuario'); // Limpia datos corruptos para evitar bucles
+        return null;
+    }
+}
+
+function inicializarSesion() {
+    const usuario = obtenerUsuarioSesion();
+    const estaEnPerfil = window.location.pathname.includes('perfil.html');
+
+    if (usuario) {
+        // Actualiza indicadores de rol y perfil en el navbar si existen
+        const rolBadge = document.getElementById('rol-badge');
+        if (rolBadge && usuario.rol) {
+            rolBadge.textContent = usuario.rol;
+        }
+
+        const navLoginLink = document.getElementById('nav-login-link');
+        if (navLoginLink) {
+            navLoginLink.textContent = `Hola, ${usuario.nombre || usuario.username || 'Mi Perfil'}`;
+            navLoginLink.href = 'perfil.html';
+        }
+
+        mostrarDatosUsuarioEnHeader(usuario);
+    } else {
+        // Redirige solo si intenta ingresar a la vista de perfil sin sesión activa
+        if (estaEnPerfil) {
+            window.location.href = 'login.html';
+        }
+    }
+}
+
+function mostrarDatosUsuarioEnHeader(usuario) {
+    const contenedorUsuario = document.getElementById('usuario-header');
+    if (!contenedorUsuario) return;
+
+    contenedorUsuario.innerHTML = `
+        <span>Bienvenido, <strong>${usuario.nombre || usuario.username || usuario.email || 'Usuario'}</strong></span>
+        <button id="btn-logout" class="btn btn-sm btn-outline-danger ms-2">Cerrar Sesión</button>
+    `;
+
+    document.getElementById('btn-logout')?.addEventListener('click', cerrarSesion);
+}
+
+// Función global para Cerrar Sesión (Backend + LocalStorage)
+async function cerrarSesion() {
+    try {
+        await fetch('/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (e) {
+        console.error('Error al cerrar sesión en el servidor:', e);
+    }
+
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('usuarioActual');
+    window.location.href = 'index.html';
+}
+window.cerrarSesion = cerrarSesion;
+
+// ==========================================
+// AUXILIAR PARA PETICIONES SEGURAS (EVITA SyntaxError)
+// ==========================================
+async function realizarPeticionSegura(url, opciones = {}) {
+    const respuesta = await fetch(url, opciones);
+    const tipoContenido = respuesta.headers.get('content-type') || '';
+
+    if (!respuesta.ok) {
+        let mensajeError = `Error HTTP ${respuesta.status}`;
+        if (tipoContenido.includes('application/json')) {
+            const errData = await respuesta.json();
+            mensajeError = errData.mensaje || errData.error || mensajeError;
+        } else {
+            const textoError = await respuesta.text();
+            mensajeError = textoError || mensajeError;
+        }
+        throw new Error(mensajeError);
+    }
+
+    if (tipoContenido.includes('application/json')) {
+        return await respuesta.json();
+    }
+    return null;
+}
+
+// ==========================================
+// CONTROL DE ACCESO ADMIN
+// ==========================================
+// Muestra u oculta el panel de admin en la interfaz local
+function verificarAccesoAdminUI() {
+    const usuario = obtenerUsuarioSesion();
+    const panelAdmin = document.getElementById('panel-admin');
+
+    if (panelAdmin) {
+        if (usuario && (usuario.rol === 'ADMIN' || usuario.rol === 'ROLE_ADMIN' || usuario.esAdmin)) {
+            panelAdmin.style.display = 'block';
+            window.usuarioEsAdminGlobal = true;
+        } else {
+            panelAdmin.style.display = 'none';
+            window.usuarioEsAdminGlobal = false;
+        }
+    }
+}
+
+// Función de seguridad en tiempo real para verificar permiso de administrador con Spring Boot
+window.verificarAccesoAdmin = async function(event) {
+    if (event) event.preventDefault();
+
+    try {
+        const respuesta = await fetch('/api/auth/me', {
+            credentials: 'include'
+        });
+
+        if (!respuesta.ok) {
+            alert('Debes iniciar sesión como Administrador para agregar productos.');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const data = await respuesta.json();
+
+        if (data.rol === 'ADMIN' || data.rol === 'ROLE_ADMIN' || data.esAdmin) {
+            window.usuarioEsAdminGlobal = true;
+            const modal = document.getElementById('modalAgregarProducto');
+            if (modal) {
+                modal.style.display = 'block';
+            } else {
+                console.log('Formulario listo para mostrarse');
+            }
+        } else {
+            alert('Acceso denegado. Esta sección es exclusiva para administradores.');
+        }
+    } catch (error) {
+        alert('Debes iniciar sesión primero.');
+        window.location.href = 'login.html';
+    }
+};
+
+// Función para guardar un nuevo producto desde el formulario Admin
+async function guardarNuevoProducto(evento) {
+    if (evento) evento.preventDefault();
+
+    const form = document.getElementById('form-producto');
+    if (!form) return;
+
+    const nuevoProducto = {
+        nombre: document.getElementById('prod-nombre')?.value,
+        precio: parseFloat(document.getElementById('prod-precio')?.value ?? 0),
+        descripcion: document.getElementById('prod-descripcion')?.value,
+        imagen: document.getElementById('prod-imagen')?.value || document.getElementById('prod-imagenUrl')?.value
+    };
+
+    try {
+        await realizarPeticionSegura('/api/productos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(nuevoProducto)
+        });
+
+        alert('Producto guardado correctamente.');
+        form.reset();
+        cargarProductos();
+    } catch (error) {
+        console.error('Error en guardarNuevoProducto:', error.message);
+        alert(`No se pudo guardar el producto: ${error.message}`);
+    }
+}
+window.guardarNuevoProducto = guardarNuevoProducto;
+
+// ==========================================
+// FILTROS Y ORDENAMIENTO DE PRODUCTOS
+// ==========================================
 window.filtrarCategoria = function(categoria, boton) {
     categoriaActualFiltro = categoria;
 
-    // Cambiar estilos visuales de los botones activos
     if (boton && boton.parentElement) {
         boton.parentElement.querySelectorAll('button').forEach(b => {
             b.classList.replace('btn-dark', 'btn-outline-dark');
@@ -17,23 +210,17 @@ window.filtrarCategoria = function(categoria, boton) {
     aplicarFiltrosProductos();
 };
 
-// Aplicar filtros combinados (Categoría + Buscador en tiempo real) + Ordenamiento
 function aplicarFiltrosProductos() {
     let listaFiltrada = window.productosGlobal ?? [];
 
-    // Normalizamos el filtro seleccionado a mayúsculas y quitamos espacios
     const filtroUpper = (categoriaActualFiltro ?? '').toUpperCase().trim();
 
-    // Validamos que no sea ni 'TODOS' ni 'TODAS'
     if (filtroUpper !== 'TODOS' && filtroUpper !== 'TODAS' && filtroUpper !== '') {
         listaFiltrada = listaFiltrada.filter(p => {
             const catProducto = (p.categoria ?? '').toUpperCase().trim();
-
-            // Quitamos la 'S' final si existe para comparar en singular (ej: "URBANAS" -> "URBANA")
             const catProductoSinS = catProducto.replace(/S$/, '');
             const filtroSinS = filtroUpper.replace(/S$/, '');
 
-            // Compara si coinciden ignorando si está en plural o singular
             return catProductoSinS === filtroSinS || catProducto.includes(filtroSinS);
         });
     }
@@ -51,7 +238,6 @@ function aplicarFiltrosProductos() {
     renderizarProductos(listaFiltrada);
 }
 
-// Ordenar productos según selección del usuario
 window.ordenarProductos = function(valor) {
     ordenActualProductos = valor;
     aplicarFiltrosProductos();
@@ -74,190 +260,74 @@ function ordenarListaProductos(lista) {
     }
 }
 
-// Buscador en tiempo real vinculado al sistema de filtros
 window.filtrarTienda = function() {
     aplicarFiltrosProductos();
 };
 
-// ---------- SISTEMA DE TOASTS GLOBAL (reemplaza alerts) ----------
-window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 3200) {
-    let contenedor = document.getElementById('toastContainerUrban');
-    if (!contenedor) {
-        contenedor = document.createElement('div');
-        contenedor.id = 'toastContainerUrban';
-        contenedor.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
-        document.body.appendChild(contenedor);
-    }
-    const colores = {
-        success: 'linear-gradient(135deg,#198754,#146c43)',
-        danger:  'linear-gradient(135deg,#dc3545,#b02a37)',
-        warning: 'linear-gradient(135deg,#ffc107,#cc9a06)',
-        info:    'linear-gradient(135deg,#0d6efd,#0a58ca)',
-        dark:    'linear-gradient(135deg,#212529,#111)'
-    };
-    const toast = document.createElement('div');
-    toast.style.cssText = `min-width:280px;max-width:380px;padding:14px 18px;border-radius:12px;color:#fff;
-        font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);
-        background:${colores[tipo] ?? colores.success};pointer-events:auto;
-        transform:translateX(420px);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;gap:10px;`;
-    toast.innerHTML = `<i class="bi bi-${tipo === 'success' ? 'check-circle-fill' : tipo === 'danger' ? 'exclamation-triangle-fill' : tipo === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill'}" style="font-size:18px;"></i><span style="flex:1;">${mensaje}</span>`;
-    contenedor.appendChild(toast);
-    requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
-    setTimeout(() => {
-        toast.style.transform = 'translateX(420px)';
-        setTimeout(() => toast.remove(), 400);
-    }, duracionMs);
-};
-
-// Inicialización general al cargar la página (Barra de navegación + Estado de sesión + Carga de tienda)
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Obtener la cadena almacenada en localStorage (asegúrate de usar la misma clave 'usuario' o 'user' con la que guardaste en login)
-  const usuarioStorage = localStorage.getItem('usuario'); 
-
-  if (usuarioStorage) {
-    try {
-      // 2. Parsear a objeto JSON
-      const usuario = JSON.parse(usuarioStorage);
-
-      // 3. Actualizar la interfaz de usuario
-      // Ejemplo para perfil.html:
-      const rolBadge = document.getElementById('rol-badge'); // O el id de tu elemento
-      if (rolBadge && usuario.rol) {
-        rolBadge.textContent = usuario.rol; // Muestra 'ADMIN', 'CLIENTE', etc.
-      }
-
-      // Ejemplo para index.html (mostrar perfil en lugar de "Iniciar Sesión"):
-      const navLoginLink = document.getElementById('nav-login-link');
-      if (navLoginLink) {
-        navLoginLink.textContent = `Hola, ${usuario.nombre || 'Mi Perfil'}`;
-        navLoginLink.href = 'perfil.html';
-      }
-
-    } catch (e) {
-      console.error('Error al parsear la información del usuario:', e);
-    }
-  } else {
-    // Si no hay usuario en sesión y está en perfil.html, redirigir a login
-    if (window.location.pathname.includes('perfil.html')) {
-      window.location.href = 'login.html';
-    }
-  }
-});
-
-// Función global para Cerrar Sesión
-async function cerrarSesion() {
-    try {
-        await fetch('/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-    } catch (e) {
-        console.error('Error al cerrar sesión en el servidor', e);
-    }
-
-    // Redirigir a la página principal (index.html) en lugar de login.html
-    window.location.href = 'index.html';
-}
-
-// Función de seguridad al hacer clic en el botón de agregar producto
-window.verificarAccesoAdmin = async function(event) {
-    if (event) event.preventDefault();
-
-    try {
-        const respuesta = await fetch('/api/auth/me', {
-            credentials: 'include'
-        });
-
-        if (!respuesta.ok) {
-            alert('Debes iniciar sesión como Administrador para agregar productos.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const data = await respuesta.json();
-
-        if (data.rol === 'ADMIN' || data.rol === 'ROLE_ADMIN') {
-            const modal = document.getElementById('modalAgregarProducto');
-            if (modal) {
-                modal.style.display = 'block';
-            } else {
-                console.log('Formulario listo para mostrarse');
-            }
-        } else {
-            alert('Acceso denegado. Esta sección es exclusiva para administradores.');
-        }
-    } catch (error) {
-        alert('Debes iniciar sesión primero.');
-        window.location.href = 'login.html';
-    }
-};
-
-// Función para cargar los productos desde Spring Boot / MySQL
-function cargarProductos() {
-    const contenedor = document.getElementById('grid-productos-tienda');
+// ==========================================
+// CARGA Y PROCESAMIENTO DE PRODUCTOS (SPRING BOOT)
+// ==========================================
+async function cargarProductos() {
+    const contenedor = document.getElementById('grid-productos-tienda') || document.getElementById('contenedor-productos');
     if (!contenedor) return;
 
     contenedor.innerHTML = generarSkeletonLoading(6);
 
-    fetch('/api/productos')
-        .then(res => {
-            if (!res.ok) throw new Error('Error en el servidor');
-            return res.json();
-        })
-        .then(data => {
-            if (data && data.length > 0) {
-                console.log('Productos cargados desde la BD:', data);
-                window.productosGlobal = data.map(p => {
-                    let tallasArray = ['40'];
-                    const campoTallas = p.tallas ?? p.talla ?? p.tallasDisponibles ?? p.sizes;
-                    if (campoTallas) {
-                        if (typeof campoTallas === 'string') {
-                            tallasArray = campoTallas.replace(/[\[\]"]+/g, '').split(',').map(t => t.trim()).filter(Boolean);
-                        } else if (Array.isArray(campoTallas)) {
-                            tallasArray = campoTallas;
-                        }
+    try {
+        const data = await realizarPeticionSegura('/api/productos');
+
+        if (data && data.length > 0) {
+            console.log('Productos cargados desde la BD:', data);
+            window.productosGlobal = data.map(p => {
+                let tallasArray = ['40'];
+                const campoTallas = p.tallas ?? p.talla ?? p.tallasDisponibles ?? p.sizes;
+                if (campoTallas) {
+                    if (typeof campoTallas === 'string') {
+                        tallasArray = campoTallas.replace(/[\[\]"]+/g, '').split(',').map(t => t.trim()).filter(Boolean);
+                    } else if (Array.isArray(campoTallas)) {
+                        tallasArray = campoTallas;
                     }
+                }
 
-                    let coloresArray = [];
-                    const campoColores = p.color ?? p.colores;
-                    if (campoColores) {
-                        if (typeof campoColores === 'string') {
-                            coloresArray = campoColores.replace(/[\[\]"]+/g, '').split(',').map(c => c.trim()).filter(Boolean);
-                        } else if (Array.isArray(campoColores)) {
-                            coloresArray = campoColores;
-                        }
+                let coloresArray = [];
+                const campoColores = p.color ?? p.colores;
+                if (campoColores) {
+                    if (typeof campoColores === 'string') {
+                        coloresArray = campoColores.replace(/[\[\]"]+/g, '').split(',').map(c => c.trim()).filter(Boolean);
+                    } else if (Array.isArray(campoColores)) {
+                        coloresArray = campoColores;
                     }
+                }
 
-                    const imagenesExtra = (typeof p.imagenes === 'string')
-                        ? p.imagenes.split(',').map(u => u.trim()).filter(Boolean)
-                        : [];
+                const imagenesExtra = (typeof p.imagenes === 'string')
+                    ? p.imagenes.split(',').map(u => u.trim()).filter(Boolean)
+                    : [];
 
-                    return {
-                        id: p.id,
-                        nombre: p.nombre,
-                        categoria: p.categoria ?? 'Urbana',
-                        precio: Number(p.precio ?? 0),
-                        precioOriginal: Number(p.precioOriginal ?? p.precio ?? 0),
-                        descuento: Number(p.descuento ?? 0),
-                        destacado: Boolean(p.destacado ?? p.featured),
-                        stock: Number(p.stock ?? p.cantidad ?? 0),
-                        descripcion: p.descripcion,
-                        tallasDisponibles: tallasArray,
-                        colores: coloresArray,
-                        proveedor: p.proveedor ?? 'Urban Steps',
-                        imagen: p.imagen ?? p.imagenUrl ?? p.imagen_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
-                        imagenes: imagenesExtra
-                    };
-                });
-                aplicarFiltrosProductos();
-            } else {
-                contenedor.innerHTML = `<div class="col-12 text-center py-5"><p class="text-muted fs-5">No hay productos registrados en la base de datos.</p></div>`;
-            }
-        })
-        .catch(err => {
-            console.error('Error al conectar con el backend:', err);
-            contenedor.innerHTML = `<div class="col-12 text-center py-5"><p class="text-danger fs-5">Error de conexión con el servidor.</p></div>`;
-        });
+                return {
+                    id: p.id,
+                    nombre: p.nombre,
+                    categoria: p.categoria ?? 'Urbana',
+                    precio: Number(p.precio ?? 0),
+                    precioOriginal: Number(p.precioOriginal ?? p.precio ?? 0),
+                    descuento: Number(p.descuento ?? 0),
+                    destacado: Boolean(p.destacado ?? p.featured),
+                    stock: Number(p.stock ?? p.cantidad ?? 0),
+                    descripcion: p.descripcion,
+                    tallasDisponibles: tallasArray,
+                    colores: coloresArray,
+                    proveedor: p.proveedor ?? 'Urban Steps',
+                    imagen: p.imagen ?? p.imagenUrl ?? p.imagen_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
+                    imagenes: imagenesExtra
+                };
+            });
+            aplicarFiltrosProductos();
+        } else {
+            contenedor.innerHTML = `<div class="col-12 text-center py-5"><p class="text-muted fs-5">No hay productos registrados en la base de datos.</p></div>`;
+        }
+    } catch (err) {
+        console.error('Error al conectar con el backend:', err);
+        contenedor.innerHTML = `<div class="col-12 text-center py-5"><p class="text-danger fs-5">Error de conexión con el servidor: ${err.message}</p></div>`;
+    }
 }
 
 function generarSkeletonLoading(cantidad) {
@@ -288,9 +358,9 @@ function generarSkeletonLoading(cantidad) {
     return html;
 }
 
-// Renderizar las tarjetas PREMIUM en el catálogo
+// RENDERIZADO DE PRODUCTOS EN CATÁLOGO
 function renderizarProductos(listaProductos) {
-    const contenedor = document.getElementById('grid-productos-tienda');
+    const contenedor = document.getElementById('grid-productos-tienda') || document.getElementById('contenedor-productos');
     if (!contenedor) return;
 
     const contador = document.getElementById('contador-productos');
@@ -299,7 +369,7 @@ function renderizarProductos(listaProductos) {
         contador.textContent = `${total} ${total === 1 ? 'producto' : 'productos'}`;
     }
 
-    if (listaProductos.length === 0) {
+    if (!Array.isArray(listaProductos) || listaProductos.length === 0) {
         contenedor.innerHTML = `<div class="col-12 text-center py-5">
             <i class="bi bi-bag-x text-muted" style="font-size:56px;"></i>
             <p class="text-muted fs-5 mt-3">No se encontraron productos con estos filtros.</p>
@@ -331,7 +401,7 @@ function renderizarProductos(listaProductos) {
 
         html += `
             <div class="col">
-                <div class="card card-producto h-100 shadow-sm border-0 overflow-hidden">
+                <div class="card card-producto h-100 shadow-sm border-0 overflow-hidden" data-id="${producto.id}">
                     <div class="position-relative" style="cursor:pointer;" onclick="verDetalle(${producto.id})">
                         <img src="${producto.imagen}" class="card-img-top" alt="${producto.nombre}"
                             style="height: 210px; object-fit: cover;"
@@ -360,8 +430,7 @@ function renderizarProductos(listaProductos) {
                         <div class="mb-3">
                             ${descuento > 0 ? `
                                 <div class="d-flex align-items-baseline gap-2">
-                                    <span class="fw-bold text-danger fs-5">$${Number(Math.round(precioConDescuento)).toLocaleString()}</span>
-                                    <span class="text-muted small text-decoration-line-through">$${Number(producto.precio).toLocaleString()}</span>
+                                    <span class="fw-bold text-danger fs-5">$${Number(Math.round(precioConDescuento)).toLocaleString()}</span>                                     <span class="text-muted small text-decoration-line-through">$${Number(producto.precio).toLocaleString()}</span>
                                 </div>`
                               : `<span class="fw-bold text-danger fs-5">$${Number(producto.precio).toLocaleString()}</span>`
                             }
@@ -386,7 +455,8 @@ function renderizarProductos(listaProductos) {
                                     nombre: producto.nombre,
                                     precio: Math.round(precioConDescuento),
                                     talla: tallaDefault,
-                                    stock: stock
+                                    stock: stock,
+                                    imagen: producto.imagen
                                 })})'>
                                 ${agotado ? '<i class="bi bi-x-circle me-1"></i> Agotado' : '<i class="bi bi-cart-plus me-1"></i> Añadir al carrito'}
                             </button>
@@ -399,11 +469,12 @@ function renderizarProductos(listaProductos) {
     contenedor.innerHTML = html;
 }
 
-// Agregar al carrito rápido desde el catálogo (con validación de stock y auth)
+// ==========================================
+// OPERACIONES DEL CARRITO Y COMPRA
+// ==========================================
 function agregarAlCarritoRapido(info) {
     let carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
 
-    // Evalúa coincidencia de ID y Talla
     const indexExistente = carrito.findIndex(it => it.productoId === info.id && it.talla === info.talla);
 
     if (indexExistente !== -1) {
@@ -428,14 +499,14 @@ function agregarAlCarritoRapido(info) {
     localStorage.setItem('carritoSteps', JSON.stringify(carrito));
     if (typeof actualizarContadorCarrito === 'function') actualizarContadorCarrito();
     if (typeof renderizarCarritoModal === 'function') renderizarCarritoModal();
+    if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`"${info.nombre}" añadido al carrito`, 'success');
 }
+window.agregarAlCarritoRapido = agregarAlCarritoRapido;
 
-// Función global para redirigir al detalle pasando el ID por la URL
 window.verDetalle = function(id) {
     window.location.href = `detalle.html?id=${id}`;
 };
 
-// Carrito estrictamente protegido (Verifica autenticación y datos reales del usuario)
 window.agregarAlCarrito = async function(nombre, precio, id) {
     try {
         const respuesta = await fetch('/api/auth/me', {
@@ -535,14 +606,6 @@ function actualizarCarritoModal() {
     if (totalSpan) totalSpan.innerText = total.toLocaleString();
 }
 
-function mostrarToast(msg) {
-    const el = document.getElementById('toastIndex');
-    if (!el) return;
-    document.getElementById('toast-mensaje-index').innerText = msg;
-    new bootstrap.Toast(el).show();
-}
-
-// Finalizar Compra Blindada
 async function finalizarCompra() {
     const carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
 
@@ -551,7 +614,7 @@ async function finalizarCompra() {
         return;
     }
 
-    const usuario = window.usuarioActual || {};
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual || {};
     const totalCompra = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
     const nuevoPedido = {
@@ -561,7 +624,6 @@ async function finalizarCompra() {
         metodoPago: 'Nequi',
         total: totalCompra,
         estado: 'PENDIENTE',
-        // Arreglo de ítems del carrito enviado al servidor
         detalles: carrito.map(item => ({
             productoId: item.productoId,
             nombre: item.nombre,
@@ -592,6 +654,46 @@ async function finalizarCompra() {
         console.error("Error al finalizar compra:", error);
         alert("No se pudo conectar con el servidor.");
     }
+}
+window.finalizarCompra = finalizarCompra;
+
+// ==========================================
+// TOASTS Y NOTIFICACIONES
+// ==========================================
+window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 3200) {
+    let contenedor = document.getElementById('toastContainerUrban');
+    if (!contenedor) {
+        contenedor = document.createElement('div');
+        contenedor.id = 'toastContainerUrban';
+        contenedor.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+        document.body.appendChild(contenedor);
+    }
+    const colores = {
+        success: 'linear-gradient(135deg,#198754,#146c43)',
+        danger:  'linear-gradient(135deg,#dc3545,#b02a37)',
+        warning: 'linear-gradient(135deg,#ffc107,#cc9a06)',
+        info:    'linear-gradient(135deg,#0d6efd,#0a58ca)',
+        dark:    'linear-gradient(135deg,#212529,#111)'
+    };
+    const toast = document.createElement('div');
+    toast.style.cssText = `min-width:280px;max-width:380px;padding:14px 18px;border-radius:12px;color:#fff;
+        font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);
+        background:${colores[tipo] ?? colores.success};pointer-events:auto;
+        transform:translateX(420px);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;gap:10px;`;
+    toast.innerHTML = `<i class="bi bi-${tipo === 'success' ? 'check-circle-fill' : tipo === 'danger' ? 'exclamation-triangle-fill' : tipo === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill'}" style="font-size:18px;"></i><span style="flex:1;">${mensaje}</span>`;
+    contenedor.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
+    setTimeout(() => {
+        toast.style.transform = 'translateX(420px)';
+        setTimeout(() => toast.remove(), 400);
+    }, duracionMs);
+};
+
+function mostrarToast(msg) {
+    const el = document.getElementById('toastIndex');
+    if (!el) return;
+    document.getElementById('toast-mensaje-index').innerText = msg;
+    new bootstrap.Toast(el).show();
 }
 
 // Guardar nuevo producto en la Base de Datos con múltiples tallas + descuento + destacado
