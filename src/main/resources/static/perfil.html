@@ -49,7 +49,7 @@
                         <div class="profile-avatar" id="avatar-iniciales">U</div>
                         <div class="flex-grow-1">
                             <h3 id="nombreUsuario" class="fw-bold mb-1">Cargando...</h3>
-                            <p id="emailUsuario" class="text-muted mb-1 small"><i class="bi bi-envelope me-1"></i> --</p>
+                            <p class="text-muted mb-1 small"><i class="bi bi-envelope me-1"></i><span id="emailUsuario">--</span></p>
                             <span id="badgeRol" class="badge bg-secondary rounded-pill px-3 py-2">Cargando rol...</span>
                         </div>
                         <div class="d-none d-md-flex flex-column gap-1 small text-muted">
@@ -197,8 +197,37 @@
         let usuarioActual = null;
         let modalEditar = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             modalEditar = new bootstrap.Modal(document.getElementById('modalEditarPerfil'));
+
+            try {
+                const response = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
+                if (response.ok) {
+                    usuarioActual = await response.json();
+                    actualizarUI(usuarioActual);
+
+                    const badgeRol = document.getElementById('badgeRol');
+                    const esAdmin = usuarioActual.rol === 'ADMIN' || usuarioActual.rol === 'ROLE_ADMIN';
+                    
+                    if (esAdmin) {
+                        badgeRol.textContent = 'Administrador Principal';
+                        badgeRol.className = 'badge rounded-pill px-3 py-2';
+                        badgeRol.style.background = 'linear-gradient(135deg, #dc2626, #ef4444)';
+                        document.getElementById('panelAdmin').classList.remove('d-none');
+                    } else {
+                        badgeRol.textContent = 'Cliente';
+                        badgeRol.className = 'badge rounded-pill px-3 py-2';
+                        badgeRol.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
+                        document.getElementById('panelCliente').classList.remove('d-none');
+                    }
+                } else {
+                    mostrarToastPerfil('Debes iniciar sesión para acceder a tu perfil.', 'error');
+                    setTimeout(() => window.location.href = 'login.html', 1500);
+                }
+            } catch (error) {
+                console.error(error);
+                mostrarToastPerfil('Error de conexión con el servidor.', 'error');
+            }
         });
 
         function abrirModalEditar() {
@@ -249,8 +278,8 @@
         });
 
         function actualizarUI(usuario) {
-            document.getElementById('nombreUsuario').textContent = usuario.nombre;
-            document.getElementById('emailUsuario').textContent = usuario.email;
+            document.getElementById('nombreUsuario').textContent = usuario.nombre || 'Usuario';
+            document.getElementById('emailUsuario').textContent = usuario.email || '--';
             document.getElementById('telefonoUsuario').textContent = usuario.telefono || 'No registrado';
             document.getElementById('direccionUsuario').textContent = usuario.direccion || 'No registrada';
             
@@ -281,36 +310,6 @@
             setTimeout(() => toast.style.transform = 'translateX(0)', 10);
             setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 400); }, 4500);
         }
-
-        document.addEventListener("DOMContentLoaded", async () => {
-            try {
-                const response = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
-                if (response.ok) {
-                    usuarioActual = await response.json();
-                    actualizarUI(usuarioActual);
-
-                    const badgeRol = document.getElementById('badgeRol');
-                    const esAdmin = usuario.rol === 'ADMIN' || usuario.rol === 'ROLE_ADMIN';
-                    if (esAdmin) {
-                        badgeRol.textContent = 'Administrador Principal';
-                        badgeRol.className = 'badge rounded-pill px-3 py-2';
-                        badgeRol.style.background = 'linear-gradient(135deg, #dc2626, #ef4444)';
-                        document.getElementById('panelAdmin').classList.remove('d-none');
-                    } else {
-                        badgeRol.textContent = 'Cliente';
-                        badgeRol.className = 'badge rounded-pill px-3 py-2';
-                        badgeRol.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
-                        document.getElementById('panelCliente').classList.remove('d-none');
-                    }
-                } else {
-                    mostrarToastPerfil('Debes iniciar sesión para acceder a tu perfil.', 'error');
-                    setTimeout(() => window.location.href = 'login.html', 1500);
-                }
-            } catch (error) {
-                console.error(error);
-                mostrarToastPerfil('Error de conexión con el servidor.', 'error');
-            }
-        });
 
         async function cerrarSesion() {
             try { await fetch('/logout', { method: 'POST', credentials: 'include' }); } catch(e) { console.error(e); }

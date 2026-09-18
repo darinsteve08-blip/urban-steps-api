@@ -96,8 +96,7 @@ public class SecurityConfig {
                 "https://*.onrender.com",
                 "https://*.railway.app",
                 "https://*.clever-cloud.com",
-                "https://*.netlify.app",
-                "*"
+                "https://*.netlify.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));

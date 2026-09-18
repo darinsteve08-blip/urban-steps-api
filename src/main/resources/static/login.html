@@ -160,44 +160,49 @@
         }
 
         async function manejarLogin(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('btn-login');
-            const txt = document.getElementById('btn-login-text');
-            btn.disabled = true;
-            txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ingresando...';
+    event.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('btn-login');
+    const txt = document.getElementById('btn-login-text');
+    btn.disabled = true;
+    txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ingresando...';
 
-            try {
-                const respuesta = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password })
-                });
+    try {
+        const respuesta = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email, password })
+        });
 
-                if (respuesta.ok) {
-                    mostrarToastLogin('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
-                    const params = new URLSearchParams(window.location.search);
-                    const redirect = params.get('redirect');
-                    setTimeout(() => window.location.href = redirect || 'index.html', 1200);
-                } else {
-                    let msg = 'Correo o contraseña incorrectos.';
-                    try {
-                        const data = await respuesta.json();
-                        if (data && data.message) msg = data.message;
-                        else { const t = await respuesta.text(); if (t) msg = t; }
-                    } catch(e) {}
-                    mostrarToastLogin(msg, 'error');
+        const textoRespuesta = await respuesta.text();
+
+        if (respuesta.ok) {
+            mostrarToastLogin('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get('redirect');
+            setTimeout(() => window.location.href = redirect || 'index.html', 1200);
+        } else {
+            let msg = 'Correo o contraseña incorrectos.';
+            if (textoRespuesta) {
+                try {
+                    const data = JSON.parse(textoRespuesta);
+                    msg = data.message || data.mensaje || msg;
+                } catch (e) {
+                    msg = textoRespuesta;
                 }
-            } catch (error) {
-                console.error(error);
-                mostrarToastLogin('No se pudo conectar con el servidor. Revisa que el backend esté corriendo.', 'error');
-            } finally {
-                btn.disabled = false;
-                txt.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión';
             }
+            mostrarToastLogin(msg, 'error');
         }
+    } catch (error) {
+        console.error(error);
+        mostrarToastLogin('No se pudo conectar con el servidor. Revisa que el backend esté corriendo.', 'error');
+    } finally {
+        btn.disabled = false;
+        txt.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión';
+    }
+}
 
         async function ejecutarRestablecerPassword(event) {
             event.preventDefault();

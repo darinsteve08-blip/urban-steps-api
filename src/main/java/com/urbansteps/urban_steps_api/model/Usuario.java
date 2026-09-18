@@ -1,5 +1,6 @@
 package com.urbansteps.urban_steps_api.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
@@ -20,6 +21,7 @@ public class Usuario {
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 4, max = 200, message = "La contraseña debe tener entre 4 y 200 caracteres")
     @Column(nullable = false, length = 200)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @NotBlank(message = "El nombre es obligatorio")
