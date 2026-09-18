@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -67,8 +68,12 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            // Guardado explícito del contexto de seguridad en la sesión HTTP
             HttpSession session = request.getSession(true);
-            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            session.setAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, 
+                SecurityContextHolder.getContext()
+            );
 
             return ResponseEntity.ok(Map.of("mensaje", "¡Login exitoso!", "email", email));
         } catch (Exception e) {
@@ -76,7 +81,8 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/me")
+    // Acepta tanto /me como /current para ser compatible con el JS
+    @GetMapping({"/me", "/current"})
     public ResponseEntity<?> obtenerUsuarioActual(Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No autorizado");

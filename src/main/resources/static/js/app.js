@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarSesion();
     cargarProductos();
     verificarAccesoAdminUI();
+    verificarSesion();
 });
 
 // ==========================================
@@ -998,3 +999,79 @@ window.agregarAlCarritoRapidoById = function(id) {
         imagen: producto.imagenUrl || producto.imagen || ''
     });
 };
+async function verificarSesion() {
+    try {
+        const respuesta = await fetch('/api/auth/current', {
+            method: 'GET',
+            credentials: 'include' // OBLIGATORIO: Envía la cookie JSESSIONID
+        });
+
+        if (respuesta.ok) {
+            const usuario = await respuesta.json();
+            console.log("Sesión detectada exitosamente:", usuario);
+
+            // Normalizar el rol a mayúsculas
+            const rol = usuario.rol ? usuario.rol.toUpperCase() : '';
+            
+            const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
+            const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
+
+            // Asignamos permisos globales de gestión si es Admin u Operario
+            window.usuarioEsAdminGlobal = esAdmin || esOperario;
+            window.usuarioActual = usuario;
+
+            actualizarInterfazUsuario(usuario, esAdmin, esOperario);
+        } else {
+            console.log("No hay sesión activa (401 / No autenticado)");
+            window.usuarioEsAdminGlobal = false;
+            window.usuarioActual = null;
+            actualizarInterfazInvitado();
+        }
+    } catch (error) {
+        console.error("Error al verificar sesión:", error);
+        window.usuarioEsAdminGlobal = false;
+    }
+}
+
+function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
+    // 1. Ocultar botón de Iniciar Sesión y mostrar datos del usuario
+    const btnLogin = document.getElementById('btnLoginNavbar');
+    if (btnLogin) {
+        btnLogin.outerHTML = `
+            <div class="dropdown">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-1"></i> ${usuario.nombre || usuario.email}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><span class="dropdown-item-text text-muted small">Rol: <strong>${usuario.rol}</strong></span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="cerrarSesion(event)"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        `;
+    }
+
+    // 2. Mostrar Panel de Administración / Gestión si es Admin u Operario
+    const btnPanelAdmin = document.getElementById('btnPanelAdmin');
+    if (btnPanelAdmin) {
+        btnPanelAdmin.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
+    }
+
+    const btnAgregarProducto = document.getElementById('btnAgregarProducto');
+    if (btnAgregarProducto) {
+        btnAgregarProducto.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
+    }
+
+    // Recargar el catálogo para renderizar los botones de eliminar si aplica
+    if (typeof cargarProductosTienda === 'function') {
+        cargarProductosTienda();
+    }
+}
+
+function actualizarInterfazInvitado() {
+    const btnPanelAdmin = document.getElementById('btnPanelAdmin');
+    if (btnPanelAdmin) btnPanelAdmin.style.display = 'none';
+
+    const btnAgregarProducto = document.getElementById('btnAgregarProducto');
+    if (btnAgregarProducto) btnAgregarProducto.style.display = 'none';
+}

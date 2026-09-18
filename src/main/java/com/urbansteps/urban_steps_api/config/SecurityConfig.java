@@ -32,6 +32,10 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            
+            // 1. VITAL: Obliga a Spring Security a guardar el contexto de autenticación en la sesión HTTP
+            .securityContext(sc -> sc.requireExplicitSave(false)) 
+            
             .sessionManagement(sess -> sess
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
@@ -45,10 +49,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
 
-                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                // 2. SE AGREGA OPERARIO Y ROLE_OPERARIO A LOS PERMISOS DE GESTIÓN
+                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")
+                .requestMatchers(HttpMethod.PATCH, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")
 
                 .requestMatchers(HttpMethod.POST, "/api/pedidos/**").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/pedidos/**").authenticated()
