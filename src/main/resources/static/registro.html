@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta - Urban Steps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .auth-card { width: 420px; border: none; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
+        .brand-logo {
+            background: linear-gradient(135deg, #111827 0%, #FF5722 140%);
+            border-radius: 20px;
+            color: white;
+            padding: 28px 20px;
+            margin: -1px -1px 24px;
+            text-align: center;
+        }
+        .input-auth {
+            border-radius: 12px; padding: 12px 16px; border: 2px solid #e5e7eb; font-family: 'Poppins', sans-serif;
+        }
+        .input-auth:focus { border-color: #FF5722; box-shadow: 0 0 0 0.25rem rgba(255,87,34,0.15); }
+        .btn-primary-auth {
+            background: linear-gradient(135deg, #FF5722, #ff8a65);
+            border: none; border-radius: 12px; padding: 12px; font-weight: 600;
+            transition: all 0.25s ease; color: white;
+        }
+        .btn-primary-auth:hover { background: #111827; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(17,24,39,0.3); color: white; }
+        .toast-container-reg { position: fixed; top: 24px; right: 24px; z-index: 9999; }
+    </style>
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center min-vh-100 py-5">
+    <div id="toast-container-reg" class="toast-container-reg"></div>
+
+    <div class="card auth-card p-0 overflow-hidden">
+        <div class="brand-logo">
+            <h2 class="fw-bold mb-1">Urban<span style="color: #fff;">Steps</span></h2>
+            <p class="mb-0 small opacity-90">Crea tu cuenta gratis 🎉</p>
+        </div>
+        <div class="p-4 pt-2">
+            <h4 class="fw-bold text-dark mb-1 text-center">Únete a Urban Steps</h4>
+            <p class="text-muted small text-center mb-4">Regístrate y empieza a comprar tus zapatos favoritos</p>
+
+            <form id="registroForm">
+                <div class="mb-3">
+                    <label for="nombre" class="form-label fw-medium small">Nombre Completo</label>
+                    <div class="position-relative">
+                        <i class="bi bi-person position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" id="nombre" class="form-control input-auth ps-5" placeholder="Tu nombre completo" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-medium small">Correo Electrónico</label>
+                    <div class="position-relative">
+                        <i class="bi bi-envelope position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                        <input type="email" id="email" class="form-control input-auth ps-5" placeholder="tu@correo.com" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-medium small">Contraseña</label>
+                    <div class="position-relative">
+                        <i class="bi bi-lock position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                        <input type="password" id="password" class="form-control input-auth ps-5" placeholder="Mínimo 4 caracteres" minlength="4" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="telefono" class="form-label fw-medium small">Teléfono <span class="text-muted">(opcional)</span></label>
+                    <div class="position-relative">
+                        <i class="bi bi-telephone position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                        <input type="tel" id="telefono" class="form-control input-auth ps-5" placeholder="+57 300 123 4567">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="direccion" class="form-label fw-medium small">Dirección <span class="text-muted">(opcional, para envíos)</span></label>
+                    <div class="position-relative">
+                        <i class="bi bi-geo-alt position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" id="direccion" class="form-control input-auth ps-5" placeholder="Tu dirección de entrega">
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-registro" class="btn btn-primary-auth w-100 mb-3">
+                    <span id="btn-registro-text"><i class="bi bi-person-plus me-2"></i>Crear Cuenta</span>
+                </button>
+
+                <div class="text-center">
+                    <small class="text-muted">¿Ya tienes cuenta? <a href="login.html" class="text-decoration-none fw-semibold" style="color:#FF5722;">Inicia sesión aquí</a></small>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="index.html" class="text-decoration-none text-muted small fw-medium">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function mostrarToastReg(mensaje, tipo='success') {
+            const container = document.getElementById('toast-container-reg');
+            const id = 'toast-' + Date.now();
+            const bg = tipo === 'success' ? 'linear-gradient(135deg, #16a34a, #22c55e)'
+                      : tipo === 'error' ? 'linear-gradient(135deg, #dc2626, #ef4444)'
+                      : 'linear-gradient(135deg, #2563eb, #3b82f6)';
+            const icono = tipo === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' : 'info-circle-fill';
+            const toast = document.createElement('div');
+            toast.id = id;
+            toast.style.cssText = `background:${bg};color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.2);margin-bottom:12px;display:flex;align-items:center;gap:12px;min-width:300px;font-family:'Poppins',sans-serif;font-weight:500;transform:translateX(120%);transition:transform 0.35s ease;`;
+            toast.innerHTML = `<i class="bi bi-${icono}" style="font-size:20px;"></i><div style="flex:1;">${mensaje}</div><button onclick="document.getElementById('${id}').style.transform='translateX(120%)'" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+            setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 400); }, 4500);
+        }
+
+        document.getElementById('registroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const telefono = document.getElementById('telefono').value.trim();
+            const direccion = document.getElementById('direccion').value.trim();
+
+            const btn = document.getElementById('btn-registro');
+            const txt = document.getElementById('btn-registro-text');
+            btn.disabled = true;
+            txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando cuenta...';
+
+            try {
+                const response = await fetch('/api/auth/registro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre, email, password,
+                        rol: 'ROLE_USER',
+                        telefono, direccion
+                    })
+                });
+
+                if (response.ok) {
+                    mostrarToastReg('¡Cuenta creada con éxito! Redirigiendo a login... 🎉', 'success');
+                    setTimeout(() => window.location.href = 'login.html?welcome=1', 1500);
+                } else {
+                    let msg = 'Error al registrarse.';
+                    try {
+                        const data = await response.json();
+                        if (data && data.message) msg = data.message;
+                        else { const t = await response.text(); if (t) msg = t; }
+                    } catch(ex) {}
+                    mostrarToastReg(msg, 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                mostrarToastReg('No se pudo conectar con el servidor. Revisa que el backend esté corriendo.', 'error');
+            } finally {
+                btn.disabled = false;
+                txt.innerHTML = '<i class="bi bi-person-plus me-2"></i>Crear Cuenta';
+            }
+        });
+    </script>
+</body>
+</html>

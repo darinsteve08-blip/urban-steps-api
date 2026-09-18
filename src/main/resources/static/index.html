@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Steps | Pisa fuerte, define tu estilo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">
+                Urban<span class="text-danger">Steps</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#catalogo">Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#testimonios">Testimonios</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2 gap-md-3 flex-wrap">
+                    <a href="pedidos.html" id="btnPanelAdmin" class="btn btn-outline-light btn-sm" style="display: none;">
+                        <i class="bi bi-gear me-1"></i> Panel Admin
+                    </a>
+                    <a href="perfil.html" id="btnMiPerfil" class="btn btn-outline-light btn-sm" style="display: none;">
+                        <i class="bi bi-person-circle me-1"></i> Mi Perfil
+                    </a>
+                    <a href="login.html" id="btnLoginNavbar" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                    </a>
+                    <button id="btnCerrarSesionNav" onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm" style="display: none;">
+                        <i class="bi bi-box-arrow-right me-1"></i> Salir
+                    </button>
+                    
+                    <button class="btn btn-dark text-white btn-sm position-relative border-secondary" data-bs-toggle="modal" data-bs-target="#modalCarrito">
+                        <i class="bi bi-cart3 me-1"></i> Carrito (<span id="contador-carrito" class="fw-bold">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="bg-dark text-white text-center py-5 shadow-sm">
+        <div class="container py-4">
+            <h1 class="display-4 fw-bold mb-2">Pisa fuerte, define tu estilo</h1>
+            <p class="text-muted fs-5 mb-4">Explora las mejores zapatillas.</p>
+        </div>
+    </div>
+
+    <div id="heroCarousel" class="carousel slide bg-secondary shadow-sm" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active text-white py-5 text-center" style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80') center/cover;">
+                <div class="container py-5">
+                    <span class="badge bg-danger mb-2 px-3 py-2">Nueva Colección</span>
+                    <h2 class="display-5 fw-bold">Zapatillas Urbanas de Alta Gama</h2>
+                    <p class="lead text-light">Comodidad y diseño exclusivo para cada paso en Colombia.</p>
+                    <a href="#catalogo" class="btn btn-light fw-bold px-4 py-2 mt-2">Ver Catálogo</a>
+                </div>
+            </div>
+            <div class="carousel-item text-white py-5 text-center" style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=1200&q=80') center/cover;">
+                <div class="container py-5">
+                    <span class="badge bg-success mb-2 px-3 py-2">Edición Limitada</span>
+                    <h2 class="display-5 fw-bold">Estilo Deportivo y Casual</h2>
+                    <p class="lead text-light">Encuentra los modelos más cotizados con envíos rápidos.</p>
+                    <a href="#catalogo" class="btn btn-dark fw-bold px-4 py-2 mt-2">Comprar Ahora</a>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+    </div>
+
+    <div class="bg-white border-bottom py-3">
+        <div class="container">
+            <div class="row text-center g-3">
+                <div class="col-md-4 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-truck fs-5 text-dark"></i>
+                    <small class="fw-bold text-muted">Envíos nacionales seguros</small>
+                </div>
+                <div class="col-md-4 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-shield-check fs-5 text-dark"></i>
+                    <small class="fw-bold text-muted">Pagos protegidos (Nequi / Bancolombia)</small>
+                </div>
+                <div class="col-md-4 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-arrow-repeat fs-5 text-dark"></i>
+                    <small class="fw-bold text-muted">Garantía de cambio de talla</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5" id="catalogo">
+        <div class="row mb-4 align-items-center g-3">
+            <div class="col-md-6 d-flex align-items-center gap-3 flex-wrap">
+                <h2 class="fw-bold mb-0">Catálogo Disponible</h2>
+                <button id="btnAgregarProducto" style="display: none;" onclick="verificarAccesoAdmin(event)" class="btn btn-dark btn-sm rounded-pill px-3 py-2">
+                    <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+                </button>
+                <span id="contador-productos" class="badge bg-light text-dark border py-2 px-3 rounded-pill fw-semibold">0 productos</span>
+            </div>
+            <div class="col-md-6 d-flex gap-2">
+                <input type="text" id="input-buscar-tienda" class="form-control rounded-pill px-4" placeholder="🔍 Buscar zapatillas por nombre o descripción..." onkeyup="filtrarTienda()">
+                <select id="select-ordenar" class="form-select rounded-pill fw-semibold" style="max-width:220px;" onchange="ordenarProductos(this.value)">
+                    <option value="FECHA_DESC">🔻 Nuevos primero</option>
+                    <option value="PRECIO_ASC">💰 Precio: menor</option>
+                    <option value="PRECIO_DESC">💰 Precio: mayor</option>
+                    <option value="NOMBRE_ASC">🔤 A → Z</option>
+                    <option value="STOCK_ASC">📦 Poco stock</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-4" id="botones-categorias">
+            <button class="btn btn-dark btn-sm rounded-pill px-4 py-2 active fw-semibold" onclick="filtrarCategoria('TODOS', this)">🔥 Todas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Urbana', this)">🏙️ Urbanas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Deportiva', this)">⚽ Deportivas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Casual', this)">👟 Casuales</button>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="grid-productos-tienda">
+            <!-- Los productos se inyectan dinámicamente aquí desde app.js -->
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalAgregarProducto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold">Registrar Nueva Zapatilla</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAgregarProducto" onsubmit="guardarNuevoProducto(event)">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Nombre del Producto:</label>
+                            <input type="text" id="nuevoNombre" class="form-control" placeholder="Ej. Nike Air Force 1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Categoría:</label>
+                            <select id="nuevaCategoria" class="form-select">
+                                <option value="Urbana">Urbana</option>
+                                <option value="Casual">Casual</option>
+                                <option value="Deportiva">Deportiva</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Precio (COP):</label>
+                            <input type="number" id="nuevoPrecio" class="form-control" placeholder="Ej. 350000" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Descripción:</label>
+                            <textarea id="nuevaDescripcion" class="form-control" rows="2" placeholder="Breve detalle del producto..." required></textarea>
+                        </div>
+                        
+                        <!-- Imagen Principal -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">URL de la Imagen Principal:</label>
+                            <input type="url" id="nuevoImagen" class="form-control" placeholder="https://images.unsplash.com/..." required>
+                        </div>
+
+                        <!-- Fotos Adicionales -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">URLs de Fotos Adicionales (Opcional):</label>
+                            <input type="text" id="nuevasImagenes" class="form-control" placeholder="https://foto2.com, https://foto3.com">
+                            <small class="text-muted">Separa varias URLs con comas para habilitar la galería de ángulos.</small>
+                        </div>
+
+                        <!-- Selección Múltiple de Colores -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Selecciona los Colores Disponibles:</label>
+                            <div class="d-flex flex-wrap gap-3 p-2 border rounded bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Negro" id="cNegro">
+                                    <label class="form-check-label" for="cNegro">Negro</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Blanco" id="cBlanco">
+                                    <label class="form-check-label" for="cBlanco">Blanco</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Gris" id="cGris">
+                                    <label class="form-check-label" for="cGris">Gris</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Rojo" id="cRojo">
+                                    <label class="form-check-label" for="cRojo">Rojo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Azul" id="cAzul">
+                                    <label class="form-check-label" for="cAzul">Azul</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-color" type="checkbox" value="Multicolor" id="cMulti">
+                                    <label class="form-check-label" for="cMulti">Multicolor</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selección Múltiple de Tallas -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Selecciona las Tallas Disponibles:</label>
+                            <div class="d-flex flex-wrap gap-3 p-2 border rounded bg-light">
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="35" id="t35">
+                                    <label class="form-check-label" for="t35">35</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="36" id="t36">
+                                    <label class="form-check-label" for="t36">36</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="37" id="t37">
+                                    <label class="form-check-label" for="t37">37</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="38" id="t38">
+                                    <label class="form-check-label" for="t38">38</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="39" id="t39">
+                                    <label class="form-check-label" for="t39">39</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="40" id="t40">
+                                    <label class="form-check-label" for="t40">40</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="41" id="t41">
+                                    <label class="form-check-label" for="t41">41</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input check-talla" type="checkbox" value="42" id="t42">
+                                    <label class="form-check-label" for="t42">42</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Precio Base (COP):</label>
+                                <input type="number" id="nuevoPrecio" class="form-control" placeholder="Ej. 350000" required>
+                                <small class="text-muted">Precio sin descuento</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Precio Original <span class="text-muted">(opcional)</span>:</label>
+                                <input type="number" id="nuevoPrecioOriginal" class="form-control" placeholder="Ej. 420000">
+                                <small class="text-muted">Para efecto tachado (si hay descuento)</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Descuento (%):</label>
+                                <input type="number" id="nuevoDescuento" class="form-control" placeholder="Ej. 15" min="0" max="100" value="0">
+                                <small class="text-muted">0 = sin descuento</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Stock / Cantidad:</label>
+                                <input type="number" id="nuevoStock" class="form-control" placeholder="Ej. 10" required min="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <label class="form-label fw-bold small mb-0 d-block">¿Producto Destacado?</label>
+                                <small class="text-muted">Aparecerá con etiqueta 🔥 "Top"</small>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="nuevoDestacado" style="width: 48px; height: 24px;">
+                                <label class="form-check-label fw-semibold ms-2" for="nuevoDestacado">Activar</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Proveedor / Marca:</label>
+                            <input type="text" id="nuevoProveedor" class="form-control" placeholder="Ej. Nike, Adidas, Puma..." required>
+                        </div>
+
+                        <button type="submit" id="btn-guardar-producto" class="btn btn-dark w-100 rounded-pill fw-bold py-2">
+                            <span id="btn-guardar-texto"><i class="bi bi-save me-2"></i>Guardar en Base de Datos</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="bg-white py-5 border-top" id="testimonios">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-4">Lo que dicen nuestros clientes</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card p-4 h-100 border-0 shadow-sm bg-light">
+                        <p class="text-muted fst-italic">"El pedido llegó rapidísimo a Medellín y la calidad es brutal."</p>
+                        <h6 class="fw-bold mb-0">Carlos M.</h6>
+                        <small class="text-dark">★★★★★</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 h-100 border-0 shadow-sm bg-light">
+                        <p class="text-muted fst-italic">"Excelente atención y los precios en pesos colombianos son muy buenos."</p>
+                        <h6 class="fw-bold mb-0">Ana Sofía R.</h6>
+                        <small class="text-dark">★★★★★</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 h-100 border-0 shadow-sm bg-light">
+                        <p class="text-muted fst-italic">"Súper cómodas para el día a día en Bogotá. Totalmente recomendadas."</p>
+                        <h6 class="fw-bold mb-0">Mateo V.</h6>
+                        <small class="text-dark">★★★★★</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center text-muted small">
+            <p class="mb-1 fw-bold text-light">&copy; 2026 Urban Steps. Pisa fuerte, define tu estilo. Todos los derechos reservados.</p>
+            <p class="mb-0">Soporte: soporte@urbansteps.com | WhatsApp: +57 300 123 4567</p>
+        </div>
+    </footer>
+
+    <!-- Modal para Cambiar Contraseña -->
+    <div class="modal fade" id="modalCambiarPassword" tabindex="-1" aria-labelledby="modalCambiarPasswordLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="modalCambiarPasswordLabel"><i class="bi bi-key me-2"></i>Cambiar Contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCambiarPassword" onsubmit="ejecutarCambioPassword(event)">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Contraseña Actual</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="newPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100">Actualizar Contraseña</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalCarrito" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Carrito de Compras</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="cuerpo-carrito-tienda">
+                    <p class="text-muted text-center py-2">El carrito está vacío.</p>
+                </div>
+                <div class="modal-footer flex-column">
+                    <div class="d-flex justify-content-between w-100 mb-2">
+                        <span class="fw-bold">Total:</span>
+                        <span class="fw-bold text-danger">$<span id="carrito-total-tienda">0</span> COP</span>
+                    </div>
+                    <a href="carrito.html" class="btn btn-dark w-100 rounded-pill fw-bold">Ir al Carrito y Pagar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+        <div id="toastIndex" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-mensaje-index">Acción realizada.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

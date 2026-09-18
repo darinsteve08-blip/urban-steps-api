@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Steps | Tu Carrito</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="index.html">Urban<span style="color:#FF5722;">Steps</span></a>
+            <a href="index.html" class="text-white text-decoration-none fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Seguir comprando
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-5" style="min-height: 70vh;">
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-bag-check me-2 text-danger"></i>Tu Carrito
+            </h2>
+            <span id="contador-items-carrito" class="badge rounded-pill bg-dark py-2 px-3">0 artículos</span>
+            <button id="btn-vaciar-carrito" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-auto d-none">
+                <i class="bi bi-trash me-1"></i> Vaciar carrito
+            </button>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div id="lista-carrito" class="d-flex flex-column gap-3 mb-4">
+                    <!-- Items renderizados dinámicamente -->
+                </div>
+
+                <div id="recomendaciones" class="d-none">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>También te puede gustar</h5>
+                    <div id="lista-recomendados" class="row row-cols-2 row-cols-md-4 g-3"></div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card resumen-card shadow-sm p-4 sticky-top" style="top:24px;">
+                    <h4 class="fw-bold mb-3"><i class="bi bi-receipt me-2 text-dark"></i>Resumen del Pedido</h4>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">Cupón de descuento (opcional)</label>
+                        <div class="input-group">
+                            <input type="text" id="input-cupon" class="form-control" placeholder="Ej: BIENVENIDO10" style="border-top-left-radius:10px;border-bottom-left-radius:10px;">
+                            <button class="btn btn-outline-dark fw-semibold" onclick="aplicarCupon()" style="border-top-right-radius:10px;border-bottom-right-radius:10px;">
+                                Aplicar
+                            </button>
+                        </div>
+                        <div id="cupon-aplicado-info" class="mt-2 d-none"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Subtotal ({{items}} items)</span>
+                        <span id="subtotal-pagar" class="fw-semibold">$0 COP</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Envío</span>
+                        <span id="envio-pagar" class="fw-semibold text-success">Gratis</span>
+                    </div>
+                    <div id="fila-descuento-cupon" class="d-none d-flex justify-content-between mb-2 small">
+                        <span class="text-success">Descuento cupón</span>
+                        <span id="cupon-descuento" class="fw-semibold text-success">-$0 COP</span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-baseline mb-4">
+                        <span class="fw-bold fs-5">Total a pagar:</span>
+                        <span id="total-pagar" class="fw-bold text-success fs-3">$0 COP</span>
+                    </div>
+                    
+                    <button id="btn-pagar" class="btn btn-lg btn-dark w-100 py-3 fw-bold rounded-pill shadow-sm">
+                        <i class="bi bi-shield-lock me-2"></i>Proceder al Pago 🚀
+                    </button>
+                    <p class="text-muted text-center small mt-3 mb-0">
+                        <i class="bi bi-lock me-1"></i>Pago 100% seguro. Envíos a todo Colombia.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center text-muted small">
+            <p class="mb-1">&copy; 2026 Urban Steps. Pisa fuerte, define tu estilo.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ---------- Sistema de carrito premium ----------
+        const ENVIO_GRATIS_DESDE = 250000;
+        let descuentoCuponActivo = 0;
+
+        function getCarrito() {
+            return JSON.parse(localStorage.getItem('carrito') || '[]');
+        }
+        function saveCarrito(arr) {
+            localStorage.setItem('carrito', JSON.stringify(arr));
+            renderCarrito();
+        }
+
+        function calcularTotales() {
+            const carrito = getCarrito();
+            const subtotal = carrito.reduce((s, i) => s + (Number(i.precioUnitario) * Number(i.cantidad || 1)), 0);
+            const descuentoAplicado = Math.round(subtotal * (descuentoCuponActivo / 100));
+            const envio = subtotal >= ENVIO_GRATIS_DESDE || subtotal === 0 ? 0 : 9900;
+            const total = subtotal + envio - descuentoAplicado;
+            return { subtotal, envio, descuentoAplicado, total };
+        }
+
+        function actualizarResumen() {
+            const carrito = getCarrito();
+            const { subtotal, envio, descuentoAplicado, total } = calcularTotales();
+            const items = carrito.reduce((s, i) => s + Number(i.cantidad || 1), 0);
+
+            document.getElementById('contador-items-carrito').textContent = `${items} ${items === 1 ? 'artículo' : 'artículos'}`;
+            document.getElementById('subtotal-pagar').textContent = `$${Number(subtotal).toLocaleString()} COP`;
+            document.getElementById('envio-pagar').innerHTML = envio === 0
+                ? `<span class="text-success fw-bold"><i class="bi bi-truck me-1"></i>GRATIS</span>`
+                : `$${Number(envio).toLocaleString()} COP`;
+
+            document.getElementById('fila-descuento-cupon').classList.toggle('d-none', descuentoCuponActivo === 0);
+            document.getElementById('cupon-descuento').textContent = `-$${Number(descuentoAplicado).toLocaleString()} COP`;
+            document.getElementById('total-pagar').textContent = `$${Number(total).toLocaleString()} COP`;
+            localStorage.setItem('totalCompra', Math.max(total, 0));
+
+            document.getElementById('btn-vaciar-carrito').classList.toggle('d-none', carrito.length === 0);
+        }
+
+        function renderCarrito() {
+            const carrito = getCarrito();
+            const contenedor = document.getElementById('lista-carrito');
+
+            if (carrito.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="card p-5 text-center bg-white shadow-sm border-0 rounded-4">
+                        <div class="mb-3">
+                            <i class="bi bi-cart-x text-muted" style="font-size:72px;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Tu carrito está vacío</h4>
+                        <p class="text-muted mb-4">Explora nuestro catálogo y descubre las mejores zapatillas.</p>
+                        <a href="index.html" class="btn btn-dark rounded-pill px-5 py-2 fw-bold">
+                            <i class="bi bi-bag me-2"></i>Ir al Catálogo
+                        </a>
+                    </div>`;
+                document.getElementById('recomendaciones').classList.add('d-none');
+                actualizarResumen();
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            carrito.forEach((item, idx) => {
+                const img = item.imagen || obtenerImagenPorId(item.productoId) || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=200&q=80';
+                const subtotal = Number(item.precioUnitario) * Number(item.cantidad || 1);
+                const tallaHtml = item.talla ? `<small class="text-muted">Talla: <span class="fw-bold text-dark">${item.talla}</span></small>` : '';
+
+                contenedor.innerHTML += `
+                    <div class="item-carrito p-3 d-flex gap-3 align-items-center fade-in-up">
+                        <img src="${img}" class="img-item-carrito" alt="${item.nombre}" 
+                            onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=200&q=80'">
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex gap-2 align-items-start justify-content-between">
+                                <h5 class="mb-1 fw-semibold fs-6 text-truncate" style="max-width:320px;">${item.nombre}</h5>
+                                <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="eliminarItem(${idx})" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="mb-2">${tallaHtml}</div>
+                            <div class="d-flex gap-3 flex-wrap align-items-center justify-content-between">
+                                <div class="cantidad-control">
+                                    <button onclick="cambiarCantidad(${idx}, -1)" ${item.cantidad <= 1 ? 'disabled' : ''}>
+                                        <i class="bi bi-dash-lg"></i>
+                                    </button>
+                                    <input type="text" value="${item.cantidad}" readonly>
+                                    <button onclick="cambiarCantidad(${idx}, 1)">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small text-muted">Subtotal</div>
+                                    <div class="fw-bold text-dark fs-6">$${Number(subtotal).toLocaleString()} COP</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('recomendaciones').classList.remove('d-none');
+            cargarRecomendaciones();
+            actualizarResumen();
+        }
+
+        function cambiarCantidad(idx, delta) {
+            const carrito = getCarrito();
+            const nuevaCant = (carrito[idx].cantidad || 1) + delta;
+            if (nuevaCant < 1) return;
+            if (nuevaCant > 99) {
+                mostrarToastCarrito('Máximo 99 unidades por producto', 'warning');
+                return;
+            }
+            carrito[idx].cantidad = nuevaCant;
+            saveCarrito(carrito);
+        }
+
+        function eliminarItem(idx) {
+            const carrito = getCarrito();
+            carrito.splice(idx, 1);
+            saveCarrito(carrito);
+            mostrarToastCarrito('Producto eliminado del carrito', 'info');
+        }
+
+        document.getElementById('btn-vaciar-carrito').addEventListener('click', () => {
+            if (!confirm('¿Seguro que deseas vaciar todo el carrito?')) return;
+            saveCarrito([]);
+            mostrarToastCarrito('Carrito vaciado', 'info');
+        });
+
+        function aplicarCupon() {
+            const valor = document.getElementById('input-cupon').value.trim().toUpperCase();
+            const cupones = {
+                'BIENVENIDO10': 10,
+                'URBAN15': 15,
+                'STEPS20': 20
+            };
+            const info = document.getElementById('cupon-aplicado-info');
+
+            if (!valor) {
+                descuentoCuponActivo = 0;
+                info.className = 'mt-2 d-none';
+                actualizarResumen();
+                return;
+            }
+
+            if (cupones[valor]) {
+                descuentoCuponActivo = cupones[valor];
+                info.className = 'mt-2 alert alert-success py-2 small mb-0';
+                info.innerHTML = `<i class="bi bi-check-circle me-1"></i>¡Cupón aplicado! Descuento del <strong>${descuentoCuponActivo}%</strong>`;
+                mostrarToastCarrito(`Cupón aplicado: -${descuentoCuponActivo}%`, 'success');
+            } else {
+                descuentoCuponActivo = 0;
+                info.className = 'mt-2 alert alert-danger py-2 small mb-0';
+                info.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>Cupón inválido. Prueba con BIENVENIDO10, URBAN15 o STEPS20`;
+                mostrarToastCarrito('Cupón inválido', 'danger');
+            }
+            actualizarResumen();
+        }
+
+        document.getElementById('btn-pagar').addEventListener('click', () => {
+            const carrito = getCarrito();
+            if (carrito.length === 0) {
+                mostrarToastCarrito('Tu carrito está vacío', 'warning');
+                return;
+            }
+            window.location.href = 'checkout.html';
+        });
+
+        // ---------- Recomendaciones ----------
+        async function cargarRecomendaciones() {
+            try {
+                const res = await fetch('/api/productos');
+                if (!res.ok) return;
+                const todos = await res.json();
+                const carritoIds = new Set(getCarrito().map(i => i.productoId));
+                const sugeridos = todos.filter(p => !carritoIds.has(p.id)).sort(() => Math.random() - 0.5).slice(0, 4);
+                const html = sugeridos.map(p => `
+                    <div class="col">
+                        <a href="detalle.html?id=${p.id}" class="text-decoration-none text-dark">
+                            <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+                                <img src="${p.imagenUrl || p.imagen || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80'}" 
+                                    style="height:120px;object-fit:cover;" class="card-img-top" alt="${p.nombre}">
+                                <div class="card-body p-2">
+                                    <div class="fw-semibold small text-truncate">${p.nombre}</div>
+                                    <div class="text-danger fw-bold small">$${Number(p.precio || 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                `).join('');
+                document.getElementById('lista-recomendados').innerHTML = html;
+            } catch(e) { console.warn(e); }
+        }
+
+        function obtenerImagenPorId(id) {
+            try {
+                const productos = JSON.parse(sessionStorage.getItem('productosCache') || '[]');
+                const p = productos.find(x => x.id === id);
+                return p ? (p.imagen || p.imagenUrl) : '';
+            } catch(e) { return ''; }
+        }
+
+        // ---------- Cache productos ----------
+        (async function cachearProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                if (res.ok) sessionStorage.setItem('productosCache', JSON.stringify(await res.json()));
+            } catch(e) {}
+        })();
+
+        // ---------- Toasts ----------
+        function mostrarToastCarrito(mensaje, tipo = 'success') {
+            const colores = {
+                success: 'linear-gradient(135deg,#198754,#146c43)',
+                danger:  'linear-gradient(135deg,#dc3545,#b02a37)',
+                warning: 'linear-gradient(135deg,#ffc107,#cc9a06)',
+                info:    'linear-gradient(135deg,#0d6efd,#0a58ca)'
+            };
+            let contenedor = document.getElementById('toastCarrito');
+            if (!contenedor) {
+                contenedor = document.createElement('div');
+                contenedor.id = 'toastCarrito';
+                contenedor.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;';
+                document.body.appendChild(contenedor);
+            }
+            const t = document.createElement('div');
+            t.style.cssText = `min-width:260px;max-width:360px;padding:14px 18px;border-radius:12px;color:#fff;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);background:${colores[tipo] || colores.success};transform:translateX(420px);transition:transform .35s cubic-bezier(.2,.8,.2,1);`;
+            t.textContent = mensaje;
+            contenedor.appendChild(t);
+            requestAnimationFrame(() => { t.style.transform = 'translateX(0)'; });
+            setTimeout(() => {
+                t.style.transform = 'translateX(420px)';
+                setTimeout(() => t.remove(), 400);
+            }, 3000);
+        }
+
+        renderCarrito();
+    </script>
+</body>
+</html>

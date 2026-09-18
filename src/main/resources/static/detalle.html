@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Steps | Detalle del Producto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .main-image-container {
+            background: linear-gradient(135deg, #fafafa 0%, #f1f3f5 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+        }
+        .thumbnail-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 14px;
+            border: 2px solid transparent;
+            transition: all 0.25s ease;
+            background: #fff;
+            padding: 4px;
+        }
+        .thumbnail-img:hover { border-color: #dee2e6; transform: translateY(-2px); }
+        .thumbnail-img.active { border-color: #FF5722; box-shadow: 0 4px 14px rgba(255,87,34,0.25); transform: translateY(-2px); }
+        .size-box {
+            border: 2px solid #e5e7eb;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-width: 68px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .size-box:hover:not(.disabled) { border-color: #111827; transform: translateY(-2px); }
+        .size-box.selected { background: #111827; color: white; border-color: #111827; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
+        .size-box.disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+        .qty-btn {
+            width: 42px; height: 42px;
+            border: 2px solid #e5e7eb;
+            background: #fff;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            transition: all 0.15s ease;
+        }
+        .qty-btn:hover:not(:disabled) { border-color: #FF5722; color: #FF5722; background: #fff7f4; }
+        .qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .precio-original { text-decoration: line-through; color: #9ca3af; font-weight: 500; font-size: 1.25rem; }
+        .badge-destacado { background: linear-gradient(135deg, #FF5722, #ff8a65); }
+        .badge-descuento { background: linear-gradient(135deg, #16a34a, #22c55e); }
+        .badge-agotado { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .badge-poco-stock { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .relacionado-card { transition: all 0.3s ease; cursor: pointer; }
+        .relacionado-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+        .spec-row { padding: 12px 0; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; }
+        .spec-row:last-child { border-bottom: none; }
+        .spec-label { color: #6b7280; font-weight: 500; }
+        .spec-value { color: #111827; font-weight: 600; }
+        .toast-container-custom { position: fixed; top: 24px; right: 24px; z-index: 9999; }
+    </style>
+</head>
+<body class="bg-light">
+    <div id="toast-container" class="toast-container-custom"></div>
+
+    <nav class="navbar navbar-dark bg-dark shadow-sm py-3 sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="index.html" style="font-family: 'Poppins', sans-serif;">
+                Urban<span style="color: #FF5722;">Steps</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="index.html" class="text-white-50 text-decoration-none fw-medium d-none d-md-block"><i class="bi bi-grid-3x3-gap me-1"></i> Catálogo</a>
+                <a href="carrito.html" class="btn btn-outline-light btn-sm position-relative fw-medium">
+                    <i class="bi bi-cart3 me-1"></i> Carrito
+                    <span id="contador-carrito" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 10px;">0</span>
+                </a>
+                <a href="index.html" class="text-white text-decoration-none fw-medium"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a href="index.html" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a id="breadcrumb-cat" href="index.html" class="text-decoration-none text-muted">Catálogo</a></li>
+                <li id="breadcrumb-name" class="breadcrumb-item active text-dark fw-medium" aria-current="page">Producto</li>
+            </ol>
+        </nav>
+
+        <div class="row bg-white p-4 p-md-5 rounded-4 shadow-sm align-items-start" style="border: 1px solid #f0f0f0;">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="main-image-container mb-4 text-center p-4 position-relative">
+                    <div id="badges-flotantes" class="position-absolute top-3 start-3 d-flex flex-column gap-2 z-3"></div>
+                    <img id="imagen-principal" src="" alt="Vista previa del zapato" class="img-fluid rounded" style="max-height: 440px; width: 100%; object-fit: contain;">
+                </div>
+                <div id="galeria-miniaturas" class="d-flex gap-2 justify-content-center flex-wrap mb-3"></div>
+            </div>
+
+            <div class="col-lg-6 ps-lg-5 d-flex flex-column">
+                <div id="badges-superiores" class="mb-3 d-flex gap-2 flex-wrap"></div>
+
+                <h1 id="producto-nombre" class="fw-bold fs-2 text-dark mb-2" style="font-family: 'Poppins', sans-serif; line-height: 1.2;">Cargando producto...</h1>
+
+                <div class="d-flex align-items-baseline gap-3 mb-3 flex-wrap">
+                    <h2 id="producto-precio" class="text-danger fw-bold mb-0" style="font-size: 2.6rem; font-family: 'Poppins', sans-serif;">$0 COP</h2>
+                    <span id="producto-precio-original" class="precio-original d-none"></span>
+                    <span id="producto-ahorro" class="badge badge-descuento text-white px-3 py-2 rounded-pill d-none"></span>
+                </div>
+
+                <p id="producto-descripcion" class="text-muted mb-4 pb-4" style="line-height: 1.7; border-bottom: 1px solid #f3f4f6;">Cargando descripción detallada...</p>
+
+                <div class="bg-light rounded-3 p-4 mb-4">
+                    <div class="spec-row">
+                        <span class="spec-label"><i class="bi bi-tag me-2"></i>Categoría</span>
+                        <span id="producto-categoria-spec" class="spec-value text-capitalize">--</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label"><i class="bi bi-palette me-2"></i>Color</span>
+                        <span id="producto-color-spec" class="spec-value">--</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label"><i class="bi bi-building me-2"></i>Marca</span>
+                        <span id="producto-proveedor-spec" class="spec-value">--</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label"><i class="bi bi-box-seam me-2"></i>Disponibilidad</span>
+                        <span id="producto-stock-spec" class="spec-value">--</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold mb-2 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-rulers me-1"></i> Selecciona tu Talla:</span>
+                        <span id="talla-msg" class="small text-muted"></span>
+                    </label>
+                    <div id="contenedor-tallas" class="d-flex gap-2 flex-wrap"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold mb-2"><i class="bi bi-bag me-1"></i> Cantidad:</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <button id="btn-menos" class="qty-btn" onclick="cambiarCantidad(-1)">−</button>
+                        <input id="input-cantidad" type="number" class="form-control text-center fw-bold" value="1" min="1" max="99" style="width: 90px; border-radius: 12px; height: 42px;" onchange="validarCantidadInput()">
+                        <button id="btn-mas" class="qty-btn" onclick="cambiarCantidad(1)">+</button>
+                        <span id="stock-hint" class="small text-muted ms-2"></span>
+                    </div>
+                </div>
+
+                <button id="btn-agregar" class="btn btn-lg py-3 fw-bold w-100 shadow-sm mt-auto text-white" style="background: #111827; font-family: 'Poppins', sans-serif; border-radius: 14px; font-size: 1.05rem;" onmouseover="this.style.background='#FF5722'" onmouseout="this.style.background='#111827'">
+                    <i class="bi bi-cart-plus me-2 fs-5"></i> Añadir al Carrito 🛒
+                </button>
+            </div>
+        </div>
+
+        <div id="seccion-relacionados" class="mt-6 d-none">
+            <div class="d-flex justify-content-between align-items-end mb-4 mt-5">
+                <div>
+                    <h3 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;">
+                        <i class="bi bi-stars me-2" style="color: #FF5722;"></i>También te puede interesar
+                    </h3>
+                    <p class="text-muted mb-0">Productos similares seleccionados para ti</p>
+                </div>
+                <a href="index.html" class="text-decoration-none fw-medium" style="color: #FF5722;">
+                    Ver todo <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div id="grid-relacionados" class="row g-4"></div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white-50 py-5 mt-6">
+        <div class="container text-center">
+            <p class="mb-2 fw-bold fs-5 text-white" style="font-family: 'Poppins', sans-serif;">Urban<span style="color: #FF5722;">Steps</span></p>
+            <p class="small mb-0">© 2024 Urban Steps. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const productoId = params.get('id');
+let productoActual = {};
+let tallaSeleccionadaGlobal = null;
+let cantidadSeleccionada = 1;
+let productosRelacionadosCache = [];
+
+function actualizarContadorCarrito() {
+    try {
+        const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        const total = carrito.reduce((s, i) => s + (i.cantidad || 1), 0);
+        const el = document.getElementById('contador-carrito');
+        if (el) { el.textContent = total; el.style.display = total > 0 ? 'block' : 'none'; }
+    } catch(e) {}
+}
+actualizarContadorCarrito();
+
+function mostrarToastDetalle(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
+    const id = 'toast-' + Date.now();
+    const bg = tipo === 'success' ? 'linear-gradient(135deg, #16a34a, #22c55e)'
+              : tipo === 'error' ? 'linear-gradient(135deg, #dc2626, #ef4444)'
+              : 'linear-gradient(135deg, #2563eb, #3b82f6)';
+    const icono = tipo === 'success' ? 'check-circle-fill' : tipo === 'error' ? 'exclamation-triangle-fill' : 'info-circle-fill';
+    const toast = document.createElement('div');
+    toast.id = id;
+    toast.style.cssText = `background:${bg}; color:#fff; padding:16px 22px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.2); margin-bottom:12px; display:flex; align-items:center; gap:12px; min-width:300px; font-family:'Poppins',sans-serif; font-weight:500; transform:translateX(120%); transition:transform 0.35s ease;`;
+    toast.innerHTML = `<i class="bi bi-${icono}" style="font-size:22px;"></i><div style="flex:1;">${mensaje}</div><button onclick="document.getElementById('${id}').style.transform='translateX(120%)'" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer; padding:0 4px;">×</button>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+    setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 400); }, 4500);
+}
+
+function formatearMonto(v) { return '$' + Number(v || 0).toLocaleString('es-CO') + ' COP'; }
+
+window.cambiarImagenPrincipal = function(url, elementoMiniatura) {
+    document.getElementById('imagen-principal').src = url;
+    document.querySelectorAll('.thumbnail-img').forEach(img => img.classList.remove('active'));
+    if (elementoMiniatura) elementoMiniatura.classList.add('active');
+};
+
+window.seleccionarTalla = function(talla, elementoBox) {
+    if (elementoBox.classList.contains('disabled')) return;
+    tallaSeleccionadaGlobal = talla;
+    document.querySelectorAll('.size-box').forEach(box => box.classList.remove('selected'));
+    elementoBox.classList.add('selected');
+    document.getElementById('talla-msg').innerHTML = `Talla <strong class="text-dark">${talla}</strong> seleccionada`;
+};
+
+window.cambiarCantidad = function(delta) {
+    const input = document.getElementById('input-cantidad');
+    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    let n = parseInt(input.value) || 1;
+    n = Math.max(1, Math.min(max, n + delta));
+    input.value = n;
+    cantidadSeleccionada = n;
+    actualizarBotonesCantidad();
+};
+
+window.validarCantidadInput = function() {
+    const input = document.getElementById('input-cantidad');
+    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    let n = parseInt(input.value) || 1;
+    n = Math.max(1, Math.min(max, n));
+    input.value = n;
+    cantidadSeleccionada = n;
+    actualizarBotonesCantidad();
+};
+
+function actualizarBotonesCantidad() {
+    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    document.getElementById('btn-menos').disabled = cantidadSeleccionada <= 1;
+    document.getElementById('btn-mas').disabled = cantidadSeleccionada >= max;
+    const hint = document.getElementById('stock-hint');
+    if (productoActual.stock != null && productoActual.stock > 0) {
+        hint.textContent = `(Máx. ${max} ud.)`;
+    }
+}
+
+async function cargarDetalleProducto() {
+    if (!productoId) {
+        document.getElementById('producto-nombre').textContent = "Producto no especificado";
+        return;
+    }
+    try {
+        const response = await fetch(`/api/productos/${productoId}`);
+        if (!response.ok) throw new Error("No se pudo obtener el producto");
+
+        productoActual = await response.json();
+        const stock = Number(productoActual.stock) || 0;
+        const descuento = Number(productoActual.descuento) || 0;
+        const precioOriginal = Number(productoActual.precioOriginal) || Number(productoActual.precio);
+        const precioFinal = Number(productoActual.precio);
+        const destacado = !!productoActual.destacado;
+        const agotado = stock === 0;
+        const pocoStock = stock > 0 && stock <= 5;
+
+        document.title = `Urban Steps | ${productoActual.nombre}`;
+        document.getElementById('producto-nombre').textContent = productoActual.nombre;
+        document.getElementById('breadcrumb-name').textContent = productoActual.nombre;
+        document.getElementById('breadcrumb-cat').textContent = productoActual.categoria || 'Catálogo';
+
+        document.getElementById('producto-precio').textContent = formatearMonto(precioFinal);
+        if (descuento > 0 && precioOriginal > precioFinal) {
+            const el = document.getElementById('producto-precio-original');
+            el.textContent = formatearMonto(precioOriginal);
+            el.classList.remove('d-none');
+            const ahorro = document.getElementById('producto-ahorro');
+            ahorro.textContent = `Ahorra ${descuento}%`;
+            ahorro.classList.remove('d-none');
+        }
+        document.getElementById('producto-descripcion').textContent =
+            productoActual.descripcion || 'Sin descripción detallada proporcionada para este calzado.';
+        document.getElementById('producto-categoria-spec').textContent = productoActual.categoria || 'General';
+        document.getElementById('producto-proveedor-spec').textContent = productoActual.proveedor || 'Urban Steps';
+
+        let coloresHtml = '--';
+        const campoColores = productoActual.color || productoActual.colores;
+        if (campoColores) {
+            const arr = typeof campoColores === 'string'
+                ? campoColores.replace(/[\[\]"]+/g, '').split(',').map(c => c.trim()).filter(Boolean)
+                : (Array.isArray(campoColores) ? campoColores : ['Estándar']);
+            coloresHtml = arr.map(c => `<span class="badge bg-secondary me-1 px-2 py-1 rounded-pill">${c}</span>`).join('');
+        }
+        document.getElementById('producto-color-spec').innerHTML = coloresHtml;
+
+        let stockHtml;
+        if (agotado) {
+            stockHtml = '<span class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i>Agotado</span>';
+        } else if (pocoStock) {
+            stockHtml = `<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>¡Últimas ${stock} unidades!</span>`;
+        } else {
+            stockHtml = `<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>${stock} unidades disponibles</span>`;
+        }
+        document.getElementById('producto-stock-spec').innerHTML = stockHtml;
+
+        const badgesFlotantes = document.getElementById('badges-flotantes');
+        const badgesSuperiores = document.getElementById('badges-superiores');
+        let bf = '', bs = '';
+        if (destacado) {
+            bf += `<span class="badge badge-destacado text-white px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-fire me-1"></i>Destacado</span>`;
+            bs += `<span class="badge badge-destacado text-white px-3 py-2 rounded-pill"><i class="bi bi-fire me-1"></i>Producto Destacado</span>`;
+        }
+        if (descuento > 0) {
+            bf += `<span class="badge badge-descuento text-white px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-percent me-1"></i>${descuento}% OFF</span>`;
+            bs += `<span class="badge badge-descuento text-white px-3 py-2 rounded-pill"><i class="bi bi-percent me-1"></i>-${descuento}% Descuento</span>`;
+        }
+        if (agotado) {
+            bf += `<span class="badge badge-agotado text-white px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-x-circle me-1"></i>Agotado</span>`;
+            bs += `<span class="badge badge-agotado text-white px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i>Sin stock disponible</span>`;
+        } else if (pocoStock) {
+            bf += `<span class="badge badge-poco-stock text-white px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-lightning me-1"></i>Poco stock</span>`;
+            bs += `<span class="badge badge-poco-stock text-white px-3 py-2 rounded-pill"><i class="bi bi-lightning me-1"></i>¡Últimas ${stock}!</span>`;
+        }
+        badgesFlotantes.innerHTML = bf;
+        badgesSuperiores.innerHTML = bs;
+
+        let imagenes = [];
+        if (productoActual.imagen) imagenes.push(productoActual.imagen);
+        if (productoActual.imagenUrl && !imagenes.includes(productoActual.imagenUrl)) imagenes.push(productoActual.imagenUrl);
+        if (productoActual.imagenes) {
+            const extra = productoActual.imagenes.split(',').map(img => img.trim()).filter(Boolean);
+            extra.forEach(e => { if (!imagenes.includes(e)) imagenes.push(e); });
+        }
+        if (imagenes.length === 0) {
+            imagenes = ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'];
+        }
+
+        const imgPrincipal = document.getElementById('imagen-principal');
+        imgPrincipal.src = imagenes[0];
+
+        const contenedorMiniaturas = document.getElementById('galeria-miniaturas');
+        contenedorMiniaturas.innerHTML = imagenes.map((url, i) =>
+            `<img src="${url}" class="thumbnail-img ${i === 0 ? 'active' : ''}" onclick="cambiarImagenPrincipal('${url}', this)" alt="Miniatura ${i+1}">`
+        ).join('');
+
+        let tallasArray = [];
+        const campoTallas = productoActual.tallas || productoActual.talla || productoActual.tallasDisponibles;
+        if (campoTallas) {
+            tallasArray = typeof campoTallas === 'string'
+                ? campoTallas.replace(/[\[\]"]+/g, '').split(',').map(t => t.trim()).filter(Boolean)
+                : (Array.isArray(campoTallas) ? campoTallas.filter(Boolean) : ['Única']);
+        }
+        if (tallasArray.length === 0) tallasArray = ['Única'];
+
+        const contenedorTallas = document.getElementById('contenedor-tallas');
+        contenedorTallas.innerHTML = tallasArray.map((talla, i) => {
+            const deshabilitada = agotado;
+            const esPrimera = i === 0 && !deshabilitada;
+            if (esPrimera) tallaSeleccionadaGlobal = talla;
+            return `<div class="size-box ${esPrimera ? 'selected' : ''} ${deshabilitada ? 'disabled' : ''}" onclick="seleccionarTalla('${talla}', this)">${talla}</div>`;
+        }).join('');
+
+        if (agotado) {
+            document.getElementById('talla-msg').innerHTML = '<span class="text-danger fw-medium">Producto agotado temporalmente</span>';
+        }
+
+        const btnAgregar = document.getElementById('btn-agregar');
+        if (agotado) {
+            btnAgregar.disabled = true;
+            btnAgregar.innerHTML = '<i class="bi bi-x-circle me-2 fs-5"></i> Producto Agotado';
+            btnAgregar.style.background = '#6b7280';
+            btnAgregar.style.cursor = 'not-allowed';
+        } else {
+            cantidadSeleccionada = 1;
+            document.getElementById('input-cantidad').max = Math.min(stock, 99);
+            actualizarBotonesCantidad();
+        }
+
+        cargarProductosRelacionados();
+
+    } catch (error) {
+        console.error("Error al cargar el detalle:", error);
+        document.getElementById('producto-nombre').textContent = "Error al conectar con el servidor.";
+    }
+}
+
+async function cargarProductosRelacionados() {
+    try {
+        const res = await fetch(`/api/productos/${productoId}/relacionados?limit=4`);
+        if (!res.ok) return;
+        const lista = await res.json();
+        if (!lista || !lista.length) return;
+        productosRelacionadosCache = lista;
+        document.getElementById('seccion-relacionados').classList.remove('d-none');
+        const grid = document.getElementById('grid-relacionados');
+        grid.innerHTML = lista.map(p => {
+            const stk = Number(p.stock) || 0;
+            const desc = Number(p.descuento) || 0;
+            const po = Number(p.precioOriginal) || Number(p.precio);
+            const pf = Number(p.precio);
+            const agotado = stk === 0;
+            return `
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 relacionado-card border-0 rounded-4 overflow-hidden shadow-sm" style="border:1px solid #f0f0f0;" onclick="window.location.href='detalle.html?id=${p.id}'">
+                    <div class="position-relative bg-light" style="aspect-ratio: 1/1; overflow:hidden;">
+                        <img src="${p.imagen || p.imagenUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}" class="card-img-top w-100 h-100" alt="${p.nombre}" style="object-fit: cover;">
+                        <div class="position-absolute top-2 start-2 d-flex gap-1 flex-wrap">
+                            ${p.destacado ? '<span class="badge badge-destacado text-white px-2 py-1 rounded-pill" style="font-size:10px;"><i class="bi bi-fire me-1"></i>Top</span>' : ''}
+                            ${desc > 0 ? `<span class="badge badge-descuento text-white px-2 py-1 rounded-pill" style="font-size:10px;">-${desc}%</span>` : ''}
+                            ${agotado ? '<span class="badge badge-agotado text-white px-2 py-1 rounded-pill" style="font-size:10px;">Agotado</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column">
+                        <div class="small text-muted mb-1 text-capitalize">${p.categoria || 'Urbanas'}</div>
+                        <h5 class="card-title fw-bold text-dark mb-1" style="font-size: 0.95rem; line-height:1.3;">${p.nombre}</h5>
+                        <div class="mt-auto pt-2">
+                            <div class="d-flex align-items-baseline gap-2 mb-1">
+                                <span class="fw-bold text-danger" style="font-size:1.15rem;">${formatearMonto(pf)}</span>
+                                ${desc > 0 && po > pf ? `<span class="text-muted small" style="text-decoration:line-through;">${formatearMonto(po)}</span>` : ''}
+                            </div>
+                            <div class="small ${agotado ? 'text-danger' : (stk <= 5 ? 'text-warning' : 'text-success')}">
+                                ${agotado ? 'Agotado' : (stk <= 5 ? `¡Últimas ${stk}!` : `${stk} disponibles`)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { console.warn('No se pudieron cargar relacionados:', e); }
+}
+
+document.getElementById('btn-agregar').addEventListener('click', async () => {
+    const stock = Number(productoActual.stock) || 0;
+    if (stock === 0) {
+        mostrarToastDetalle('Este producto está agotado temporalmente', 'error');
+        return;
+    }
+    if (!tallaSeleccionadaGlobal) {
+        mostrarToastDetalle('Por favor selecciona una talla antes de continuar', 'warning');
+        return;
+    }
+    if (cantidadSeleccionada > stock) {
+        mostrarToastDetalle(`Solo hay ${stock} unidades disponibles. Reduce la cantidad.`, 'error');
+        return;
+    }
+
+    try {
+        const respuesta = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!respuesta.ok) {
+            mostrarToastDetalle('⚠️ Debes iniciar sesión para añadir productos al carrito', 'warning');
+            setTimeout(() => window.location.href = 'login.html?redirect=detalle.html?id=' + productoId, 1500);
+            return;
+        }
+    } catch(e) {
+        mostrarToastDetalle('⚠️ Error de conexión. Inicia sesión para continuar.', 'warning');
+        setTimeout(() => window.location.href = 'login.html', 1500);
+        return;
+    }
+
+    let carrito;
+    try { carrito = JSON.parse(localStorage.getItem('carrito')) || []; } catch(e) { carrito = []; }
+
+    const nombreConTalla = tallaSeleccionadaGlobal === 'Única'
+        ? productoActual.nombre
+        : `${productoActual.nombre} (Talla: ${tallaSeleccionadaGlobal})`;
+
+    const indexExistente = carrito.findIndex(item =>
+        String(item.productoId) === String(productoActual.id) &&
+        (item.talla || 'Única') === (tallaSeleccionadaGlobal || 'Única')
+    );
+
+    let cantidadPrevia = indexExistente >= 0 ? (carrito[indexExistente].cantidad || 0) : 0;
+    let nuevaCantidadTotal = cantidadPrevia + cantidadSeleccionada;
+
+    if (nuevaCantidadTotal > stock) {
+        const extra = stock - cantidadPrevia;
+        if (extra <= 0) {
+            mostrarToastDetalle(`Ya tienes ${cantidadPrevia} ud. en el carrito (stock máximo = ${stock})`, 'error');
+        } else {
+            mostrarToastDetalle(`Solo puedes añadir ${extra} ud. más (tienes ${cantidadPrevia} en carrito)`, 'warning');
+        }
+        return;
+    }
+
+    if (indexExistente >= 0) {
+        carrito[indexExistente].cantidad = nuevaCantidadTotal;
+    } else {
+        carrito.push({
+            productoId: productoActual.id,
+            nombre: nombreConTalla,
+            precioUnitario: Number(productoActual.precio),
+            talla: tallaSeleccionadaGlobal,
+            cantidad: cantidadSeleccionada,
+            imagen: productoActual.imagen || productoActual.imagenUrl || ''
+        });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    mostrarToastDetalle(
+        `🎉 <strong>${cantidadSeleccionada} ud.</strong> de "${productoActual.nombre}" <em>(talla ${tallaSeleccionadaGlobal})</em> añadido al carrito`,
+        'success'
+    );
+
+    const btn = document.getElementById('btn-agregar');
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-circle me-2 fs-5"></i> ¡Añadido! Ir al carrito →';
+    btn.style.background = '#16a34a';
+    setTimeout(() => {
+        btn.innerHTML = textoOriginal;
+        btn.style.background = '#111827';
+    }, 2000);
+});
+
+cargarDetalleProducto();
+</script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Steps | Historial de Pedidos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .stat-card { border: none; border-radius: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+        .chart-card { border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .table-container { border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .table-dark thead th { background: linear-gradient(135deg, #111827, #1f2937); border: none; }
+        .btn-filter.active { background: linear-gradient(135deg, #FF5722, #ff8a65); border-color: transparent; color: white; }
+        .btn-filter { border-radius: 14px; padding: 6px 16px; font-weight: 500; }
+        .toast-container-pd { position: fixed; top: 24px; right: 24px; z-index: 9999; }
+        .badge-estado { padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; }
+    </style>
+</head>
+<body class="bg-light">
+    <div id="toast-container-pd" class="toast-container-pd"></div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="index.html" style="font-family: 'Poppins', sans-serif;">
+                Urban<span style="color: #FF5722;">Steps</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-store me-1"></i> Tienda</a>
+                <a href="perfil.html" class="btn btn-outline-light btn-sm"><i class="bi bi-person me-1"></i> Mi Perfil</a>
+                <a href="carrito.html" class="btn btn-outline-light btn-sm"><i class="bi bi-cart3 me-1"></i> Carrito</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+            <div>
+                <h2 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;"><i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Pedidos</h2>
+                <p class="text-muted mb-0">Historial y gestión de todos los pedidos del sistema</p>
+            </div>
+            <button class="btn btn-danger fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarPDF()">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
+            </button>
+        </div>
+
+        <div class="row mb-4 g-3">
+            <div class="col-md-4">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Total Pedidos</h6>
+                    <h3 class="fw-bold mb-0" id="stat-total">0</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Ventas Acumuladas</h6>
+                    <h3 class="fw-bold mb-0 text-success" id="stat-ventas">$0</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Ticket Promedio</h6>
+                    <h3 class="fw-bold mb-0" style="color:#FF5722;" id="stat-promedio">$0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Distribución de Pedidos por Estado</h5>
+            <div style="max-height: 280px; position: relative;">
+                <canvas id="graficoPedidos"></canvas>
+            </div>
+        </div>
+
+        <div class="row mb-4 g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold mb-2">Filtrar por Estado:</label>
+                <div class="d-flex gap-2 flex-wrap" id="botones-filtro">
+                    <button class="btn btn-outline-dark btn-filter active" onclick="filtrarEstado('TODOS', this)">Todos</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('PENDIENTE', this)">Pendientes</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('COMPLETADO', this)">Completados</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('CANCELADO', this)">Cancelados</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label for="fecha-inicio" class="form-label small text-muted fw-bold mb-2">Desde:</label>
+                        <input type="date" id="fecha-inicio" class="form-control" style="border-radius: 12px; border: 2px solid #e5e7eb;" onchange="filtrarPedidos()">
+                    </div>
+                    <div class="col-6">
+                        <label for="fecha-fin" class="form-label small text-muted fw-bold mb-2">Hasta:</label>
+                        <input type="date" id="fecha-fin" class="form-control" style="border-radius: 12px; border: 2px solid #e5e7eb;" onchange="filtrarPedidos()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <div class="position-relative">
+                <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                <input type="text" id="input-buscar" class="form-control ps-5" placeholder="Buscar por ID, correo o nombre del cliente..."
+                    style="border-radius: 14px; border: 2px solid #e5e7eb; padding: 12px 16px 12px 44px; font-family: 'Poppins', sans-serif;"
+                    oninput="filtrarPedidos()">
+            </div>
+        </div>
+
+        <div class="bg-white table-container">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Correo</th>
+                            <th>Ciudad</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Método</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-pedidos"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <nav aria-label="Navegación de pedidos" class="mt-4">
+            <ul class="pagination justify-content-center" id="paginacion-container"></ul>
+        </nav>
+
+        <div class="text-center mt-4">
+            <a href="index.html" class="btn btn-outline-dark rounded-pill px-4 fw-semibold"><i class="bi bi-arrow-left me-2"></i>Volver al inicio</a>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #111827, #1f2937); border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                    <h5 class="modal-title fw-bold" id="modalTitulo">Detalles del Pedido</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="modalCuerpo"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white-50 py-5 mt-5">
+        <div class="container text-center">
+            <p class="mb-2 fw-bold fs-5 text-white" style="font-family: 'Poppins', sans-serif;">Urban<span style="color: #FF5722;">Steps</span></p>
+            <p class="small mb-0">© 2024 Urban Steps. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let todosLosPedidos = [];
+        let estadoActualFiltro = 'TODOS';
+        let paginaActual = 1;
+        let registrosPorPagina = 10;
+        let miGrafico = null;
+
+        function fmt(v) { return '$' + Number(v || 0).toLocaleString('es-CO') + ' COP'; }
+
+        function mostrarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container-pd');
+            const id = 'toast-' + Date.now();
+            const bg = tipo === 'success' ? 'linear-gradient(135deg, #16a34a, #22c55e)'
+                      : tipo === 'error' ? 'linear-gradient(135deg, #dc2626, #ef4444)'
+                      : 'linear-gradient(135deg, #2563eb, #3b82f6)';
+            const icono = tipo === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' : 'info-circle-fill';
+            const toast = document.createElement('div');
+            toast.id = id;
+            toast.style.cssText = `background:${bg};color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.2);margin-bottom:12px;display:flex;align-items:center;gap:12px;min-width:300px;font-family:'Poppins',sans-serif;font-weight:500;transform:translateX(120%);transition:transform 0.35s ease;`;
+            toast.innerHTML = `<i class="bi bi-${icono}" style="font-size:20px;"></i><div style="flex:1;">${mensaje}</div><button onclick="document.getElementById('${id}').style.transform='translateX(120%)'" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+            setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 400); }, 4500);
+        }
+
+        function badgeEstado(e) {
+            const map = {
+                'PENDIENTE':   { bg: 'linear-gradient(135deg, #d97706, #f59e0b)', txt: 'Pendiente',   icon: 'clock-fill' },
+                'COMPLETADO':  { bg: 'linear-gradient(135deg, #16a34a, #22c55e)', txt: 'Completado',  icon: 'check-circle-fill' },
+                'CANCELADO':   { bg: 'linear-gradient(135deg, #dc2626, #ef4444)', txt: 'Cancelado',   icon: 'x-circle-fill' }
+            };
+            const s = map[e] || { bg: '#6b7280', txt: e || 'N/D', icon: 'dash-circle' };
+            return `<span class="badge-estado text-white" style="background:${s.bg};"><i class="bi bi-${s.icon} me-1"></i>${s.txt}</span>`;
+        }
+
+        function fmtFecha(f) {
+            if (!f) return 'N/D';
+            try {
+                const d = new Date(f);
+                if (isNaN(d)) return String(f).split('T')[0];
+                return d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+            } catch(e) { return String(f).split('T')[0]; }
+        }
+
+        async function cargarPedidos() {
+            try {
+                const resTodos = fetch('/api/pedidos', { credentials: 'include' });
+                const resMios  = fetch('/api/pedidos/mis-pedidos', { credentials: 'include' }).catch(() => null);
+                const [r1, r2] = await Promise.all([resTodos, resMios]);
+
+                if (r1.ok) {
+                    todosLosPedidos = await r1.json();
+                } else if (r2 && r2.ok) {
+                    todosLosPedidos = await r2.json();
+                } else {
+                    throw new Error('No autorizado');
+                }
+                filtrarPedidos();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tabla-pedidos').innerHTML =
+                    `<tr><td colspan="9" class="text-center py-5 text-danger">
+                        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+                        Error al cargar o no tienes permisos. <a href="login.html" class="fw-bold text-decoration-none">Inicia sesión</a>
+                    </td></tr>`;
+            }
+        }
+
+        function renderizarTabla(lista) {
+            const tbody = document.getElementById('tabla-pedidos');
+            tbody.innerHTML = '';
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+                    No se encontraron pedidos.
+                </td></tr>`;
+                document.getElementById('paginacion-container').innerHTML = '';
+                actualizarGrafico([]);
+                actualizarMetricas([]);
+                return;
+            }
+
+            const inicio = (paginaActual - 1) * registrosPorPagina;
+            const fin = inicio + registrosPorPagina;
+            const listaPaginada = lista.slice(inicio, fin);
+
+            tbody.innerHTML = listaPaginada.map(p => `
+                <tr style="cursor: pointer;" onclick="verDetalles(${p.id})">
+                    <td class="fw-bold">#${p.id}</td>
+                    <td>${p.nombreCliente}</td>
+                    <td class="small">${p.emailCliente || 'No registrado'}</td>
+                    <td>${p.ciudad || 'N/D'}</td>
+                    <td class="small">${fmtFecha(p.fechaCreacion || p.fecha)}</td>
+                    <td class="fw-bold text-danger">${fmt(p.total)}</td>
+                    <td class="small">${p.metodoPago || 'N/D'}</td>
+                    <td>${badgeEstado(p.estado)}</td>
+                    <td onclick="event.stopPropagation()">
+                        ${p.estado === 'PENDIENTE' ? `
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-success btn-sm rounded-pill fw-medium" onclick="completarPedido(${p.id})"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-danger btn-sm rounded-pill fw-medium" onclick="cancelarPedido(${p.id})"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        ` : '<span class="text-muted small">—</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            renderizarBotonesPaginacion(lista.length);
+            actualizarGrafico(lista);
+            actualizarMetricas(lista);
+        }
+
+        function actualizarGrafico(lista) {
+            const p = lista.filter(x => x.estado === 'PENDIENTE').length;
+            const c = lista.filter(x => x.estado === 'COMPLETADO').length;
+            const k = lista.filter(x => x.estado === 'CANCELADO').length;
+            const ctx = document.getElementById('graficoPedidos').getContext('2d');
+            if (miGrafico) miGrafico.destroy();
+            miGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pendientes', 'Completados', 'Cancelados'],
+                    datasets: [{
+                        label: 'Cantidad de Pedidos',
+                        data: [p, c, k],
+                        backgroundColor: [
+                            'rgba(245, 158, 11, 0.85)',
+                            'rgba(34, 197, 94, 0.85)',
+                            'rgba(239, 68, 68, 0.85)'
+                        ],
+                        borderColor: ['#d97706', '#16a34a', '#dc2626'],
+                        borderWidth: 2,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        function renderizarBotonesPaginacion(totalRegistros) {
+            const totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
+            const cont = document.getElementById('paginacion-container');
+            cont.innerHTML = '';
+            if (totalPaginas <= 1) return;
+            cont.innerHTML += `
+                <li class="page-item ${paginaActual === 1 ? 'disabled' : ''}">
+                    <button class="page-link rounded-pill mx-1" style="border-radius:12px !important;" onclick="cambiarPagina(${paginaActual - 1})"><i class="bi bi-chevron-left"></i></button>
+                </li>`;
+            for (let i = 1; i <= totalPaginas; i++) {
+                cont.innerHTML += `
+                <li class="page-item ${paginaActual === i ? 'active' : ''}">
+                    <button class="page-link mx-1" style="border-radius:12px !important;" onclick="cambiarPagina(${i})">${i}</button>
+                </li>`;
+            }
+            cont.innerHTML += `
+                <li class="page-item ${paginaActual === totalPaginas ? 'disabled' : ''}">
+                    <button class="page-link rounded-pill mx-1" style="border-radius:12px !important;" onclick="cambiarPagina(${paginaActual + 1})"><i class="bi bi-chevron-right"></i></button>
+                </li>`;
+        }
+
+        function cambiarPagina(nuevaPagina) {
+            paginaActual = nuevaPagina;
+            filtrarPedidos();
+        }
+
+        function actualizarMetricas(lista) {
+            document.getElementById('stat-total').innerText = lista.length;
+            const noCancelados = lista.filter(p => p.estado !== 'CANCELADO');
+            const totalVentas = noCancelados.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+            document.getElementById('stat-ventas').innerText = fmt(totalVentas);
+            const promedio = noCancelados.length > 0 ? totalVentas / noCancelados.length : 0;
+            document.getElementById('stat-promedio').innerText = fmt(promedio);
+        }
+
+        window.exportarPDF = function() {
+            if (!todosLosPedidos || todosLosPedidos.length === 0) {
+                mostrarToast('No hay pedidos para exportar.', 'error');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const ahora = new Date();
+            const fechaHora = ahora.toLocaleString('es-CO', { dateStyle: 'full', timeStyle: 'medium' });
+            const colorPrimario = [33, 37, 41];
+            const colorAcento = [255, 87, 34];
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.setTextColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+            doc.text("Urban Steps - Reporte de Pedidos", 14, 20);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generado: ${fechaHora}`, 14, 27);
+            doc.setDrawColor(colorAcento[0], colorAcento[1], colorAcento[2]);
+            doc.setLineWidth(0.6);
+            doc.line(14, 32, 196, 32);
+
+            const columnas = ["ID", "Cliente", "Correo", "Ciudad", "Fecha", "Total", "Método", "Estado"];
+            const filas = todosLosPedidos.map(p => [
+                `#${p.id}`,
+                p.nombreCliente || '',
+                p.emailCliente || 'N/R',
+                p.ciudad || '',
+                fmtFecha(p.fechaCreacion || p.fecha),
+                `$${Number(p.total || 0).toLocaleString()}`,
+                p.metodoPago || '',
+                p.estado || ''
+            ]);
+
+            doc.autoTable({
+                startY: 38, head: [columnas], body: filas, theme: 'grid',
+                headStyles: { fillColor: colorAcento, textColor: [255,255,255], fontStyle: 'bold', halign: 'center' },
+                bodyStyles: { textColor: [40,40,40], fontSize: 8 },
+                alternateRowStyles: { fillColor: [249, 250, 251] },
+                columnStyles: { 0: { halign: 'center' }, 5: { halign: 'right' }, 7: { halign: 'center' } }
+            });
+            doc.save(`Pedidos_UrbanSteps_${ahora.toISOString().slice(0,10)}.pdf`);
+            mostrarToast('PDF descargado correctamente.', 'success');
+        }
+
+        function filtrarEstado(estado, boton) {
+            estadoActualFiltro = estado;
+            document.querySelectorAll('#botones-filtro button').forEach(b => b.classList.remove('active'));
+            if (boton) boton.classList.add('active');
+            filtrarPedidos();
+        }
+
+        function filtrarPedidos() {
+            paginaActual = 1;
+            const texto = (document.getElementById('input-buscar').value || '').toLowerCase();
+            const fechaInicio = document.getElementById('fecha-inicio').value;
+            const fechaFin = document.getElementById('fecha-fin').value;
+
+            let lista = todosLosPedidos || [];
+            if (estadoActualFiltro !== 'TODOS') lista = lista.filter(p => p.estado === estadoActualFiltro);
+
+            if (fechaInicio) lista = lista.filter(p => {
+                const f = p.fechaCreacion || p.fecha; if (!f) return false;
+                return String(f).split('T')[0] >= fechaInicio;
+            });
+            if (fechaFin) lista = lista.filter(p => {
+                const f = p.fechaCreacion || p.fecha; if (!f) return false;
+                return String(f).split('T')[0] <= fechaFin;
+            });
+            if (texto) {
+                lista = lista.filter(p =>
+                    String(p.id).includes(texto) ||
+                    (p.nombreCliente || '').toLowerCase().includes(texto) ||
+                    (p.emailCliente || '').toLowerCase().includes(texto)
+                );
+            }
+            renderizarTabla(lista);
+        }
+
+        function verDetalles(id) {
+            const pedido = todosLosPedidos.find(p => p.id === id);
+            if (!pedido) return;
+            const productosHtml = (pedido.productos && pedido.productos.length)
+                ? pedido.productos.map(dp => `
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                        <img src="${dp.imagenProducto || dp.imagen || ''}"
+                             onerror="this.style.display='none'"
+                             style="width:52px; height:52px; object-fit:cover; border-radius:10px;">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">${dp.nombreProducto || `Producto #${dp.productoId}`}</div>
+                            <div class="small text-muted">
+                                ${dp.cantidad} ud. ${dp.talla ? `· Talla ${dp.talla}` : ''} · ${fmt((dp.precioUnitario || 0) * (dp.cantidad || 1))}
+                            </div>
+                        </div>
+                    </div>`).join('')
+                : `<div class="text-muted small py-3"><em>Detalle no disponible para este pedido.</em></div>`;
+
+            document.getElementById('modalTitulo').innerText = `Pedido #${pedido.id}`;
+            document.getElementById('modalCuerpo').innerHTML = `
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <div class="bg-light rounded-3 p-3">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-person-badge me-2" style="color:#FF5722;"></i>Información del Cliente</h6>
+                            <p class="mb-1 small"><strong>Nombre:</strong> ${pedido.nombreCliente}</p>
+                            <p class="mb-1 small"><strong>Email:</strong> ${pedido.emailCliente || 'N/D'}</p>
+                            <p class="mb-1 small"><strong>Teléfono:</strong> ${pedido.telefono || 'N/D'}</p>
+                            <p class="mb-1 small"><strong>Ciudad:</strong> ${pedido.ciudad || 'N/D'}</p>
+                            <p class="mb-0 small"><strong>Dirección:</strong> ${pedido.direccion || 'N/D'}</p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="bg-light rounded-3 p-3">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2" style="color:#FF5722;"></i>Resumen del Pedido</h6>
+                            <p class="mb-1 small"><strong>Fecha:</strong> ${fmtFecha(pedido.fechaCreacion || pedido.fecha)}</p>
+                            <p class="mb-1 small"><strong>Método Pago:</strong> ${pedido.metodoPago || 'N/D'}</p>
+                            <p class="mb-3 small">${badgeEstado(pedido.estado)}</p>
+                            <div class="text-end border-top pt-3">
+                                <div class="small text-muted mb-1">Total del Pedido</div>
+                                <h3 class="fw-bold text-danger mb-0">${fmt(pedido.total)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="fw-bold mb-3"><i class="bi bi-bag-check me-2" style="color:#FF5722;"></i>Productos del Pedido</h6>
+                <div>${productosHtml}</div>
+            `;
+            new bootstrap.Modal(document.getElementById('modalDetalle')).show();
+        }
+
+        async function cancelarPedido(id) {
+            if (!confirm(`¿Seguro que deseas CANCELAR el pedido #${id}? El stock de los productos será reestablecido.`)) return;
+            try {
+                const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'PUT', credentials: 'include' });
+                if (res.ok) {
+                    mostrarToast(`Pedido #${id} cancelado y stock reestablecido.`, 'error');
+                    cargarPedidos();
+                } else {
+                    const d = await res.json().catch(() => null);
+                    mostrarToast((d && d.message) || 'No se pudo cancelar.', 'error');
+                }
+            } catch (err) { mostrarToast('Error de conexión.', 'error'); }
+        }
+
+        async function completarPedido(id) {
+            try {
+                const res = await fetch(`/api/pedidos/${id}/completar`, { method: 'PUT', credentials: 'include' });
+                if (res.ok) {
+                    mostrarToast(`Pedido #${id} marcado como completado ✅`, 'success');
+                    cargarPedidos();
+                } else {
+                    mostrarToast('No se pudo completar el pedido.', 'error');
+                }
+            } catch (err) { mostrarToast('Error de conexión.', 'error'); }
+        }
+
+        cargarPedidos();
+
+        setInterval(() => {
+            const inp = document.getElementById('input-buscar');
+            if (inp && document.activeElement !== inp) {
+                fetch('/api/pedidos', { credentials: 'include' })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => { if (d) { todosLosPedidos = d; filtrarPedidos(); } })
+                    .catch(() => {});
+            }
+        }, 15000);
+    </script>
+</body>
+</html>
