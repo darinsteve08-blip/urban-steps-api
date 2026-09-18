@@ -100,35 +100,24 @@ window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 320
 
 // Inicialización general al cargar la página (Barra de navegación + Estado de sesión + Carga de tienda)
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Urban Steps inicializado correctamente 🚀');
-
-    if (typeof actualizarContador === 'function') actualizarContador();
-    if (typeof actualizarCarritoModal === 'function') actualizarCarritoModal();
-    if (typeof cargarProductos === 'function') cargarProductos();
-
+    // 1. Validar autenticación primero para determinar permisos de Admin
     try {
         const respuesta = await fetch('/api/auth/me', { credentials: 'include' });
         if (respuesta.ok) {
-            const data = await respuesta.json();
-            window.usuarioLogueadoGlobal = data;
-            const esAdmin = (data.rol === 'ADMIN' || data.rol === 'ROLE_ADMIN');
-            window.usuarioEsAdminGlobal = esAdmin;
-
-            const btnLogin = document.getElementById('btnLoginNavbar');
-            if (btnLogin) btnLogin.style.display = 'none';
-            const btnMiPerfil = document.getElementById('btnMiPerfil');
-            if (btnMiPerfil) btnMiPerfil.style.display = 'inline-block';
-
-            if (esAdmin) {
-                const btnPanel = document.getElementById('btnPanelAdmin');
-                if (btnPanel) btnPanel.style.display = 'inline-block';
-                const btnAgregar = document.getElementById('btnAgregarProducto');
-                if (btnAgregar) btnAgregar.style.display = 'inline-block';
-            }
-            if (typeof aplicarFiltrosProductos === 'function') aplicarFiltrosProductos();
+            const usuario = await respuesta.json();
+            window.usuarioEsAdminGlobal = usuario.roles?.includes('ROLE_ADMIN') || usuario.rol === 'ADMIN' || usuario.esAdmin || false;
+            window.usuarioActual = usuario;
+        } else {
+            window.usuarioEsAdminGlobal = false;
         }
     } catch (error) {
-        console.error('Error al verificar la sesión:', error);
+        console.error("Error obteniendo datos del usuario:", error);
+        window.usuarioEsAdminGlobal = false;
+    }
+
+    // 2. Cargar los productos una vez confirmado el estado del usuario
+    if (typeof cargarProductos === 'function') {
+        await cargarProductos();
     }
 });
 
@@ -388,49 +377,35 @@ function renderizarProductos(listaProductos) {
 }
 
 // Agregar al carrito rápido desde el catálogo (con validación de stock y auth)
-window.agregarAlCarritoRapido = async function(info) {
-    if (info.stock <= 0) {
-        mostrarToastGlobal('Producto agotado temporalmente', 'warning');
-        return;
-    }
-    try {
-        const respuesta = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
-        if (!respuesta.ok) {
-            mostrarToastGlobal('Inicia sesión para comprar', 'warning');
-            setTimeout(() => { window.location.href = 'login.html'; }, 1400);
+function agregarAlCarritoRapido(info) {
+    let carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
+
+    // Evalúa coincidencia de ID y Talla
+    const indexExistente = carrito.findIndex(it => it.productoId === info.id && it.talla === info.talla);
+
+    if (indexExistente !== -1) {
+        if (carrito[indexExistente].cantidad < info.stock) {
+            carrito[indexExistente].cantidad += 1;
+        } else {
+            alert(`No hay más stock disponible para la talla ${info.talla}.`);
             return;
         }
-    } catch (e) {
-        mostrarToastGlobal('Error de conexión', 'danger');
-        return;
-    }
-
-    let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-    const nombreConTalla = `${info.nombre} (Talla: ${info.talla})`;
-    const existente = carrito.findIndex(it => it.productoId === info.id && it.talla === info.talla);
-    const totalCantidad = (existente >= 0 ? carrito[existente].cantidad : 0) + 1;
-
-    if (totalCantidad > info.stock) {
-        mostrarToastGlobal(`Solo hay ${info.stock} unidades disponibles`, 'danger');
-        return;
-    }
-
-    if (existente >= 0) carrito[existente].cantidad += 1;
-    else {
+    } else {
         carrito.push({
             productoId: info.id,
-            nombre: nombreConTalla,
-            precioUnitario: info.precio,
+            nombre: info.nombre,
+            precio: info.precio,
             talla: info.talla,
             cantidad: 1,
-            imagen: (window.productosGlobal?.find(p => p.id === info.id)?.imagen) ?? ''
+            stock: info.stock,
+            imagen: info.imagen
         });
     }
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-    actualizarContador();
-    if (typeof actualizarCarritoModal === 'function') actualizarCarritoModal();
-    mostrarToastGlobal(`${info.nombre} agregado al carrito`, 'success');
-};
+
+    localStorage.setItem('carritoSteps', JSON.stringify(carrito));
+    if (typeof actualizarContadorCarrito === 'function') actualizarContadorCarrito();
+    if (typeof renderizarCarritoModal === 'function') renderizarCarritoModal();
+}
 
 // Función global para redirigir al detalle pasando el ID por la URL
 window.verDetalle = function(id) {
@@ -546,66 +521,53 @@ function mostrarToast(msg) {
 
 // Finalizar Compra Blindada
 async function finalizarCompra() {
+    const carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
+
+    if (carrito.length === 0) {
+        alert("El carrito está vacío.");
+        return;
+    }
+
+    const usuario = window.usuarioActual || {};
+    const totalCompra = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+
+    const nuevoPedido = {
+        nombreCliente: usuario.nombre ?? usuario.username ?? 'Cliente Web',
+        emailCliente: usuario.email ?? usuario.username ?? 'cliente@urbansteps.com',
+        ciudad: 'Ocaña',
+        metodoPago: 'Nequi',
+        total: totalCompra,
+        estado: 'PENDIENTE',
+        // Arreglo de ítems del carrito enviado al servidor
+        detalles: carrito.map(item => ({
+            productoId: item.productoId,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precio: item.precio,
+            talla: item.talla
+        }))
+    };
+
     try {
-        const respuestaAuth = await fetch('/api/auth/me', {
-            method: 'GET',
-            credentials: 'include'
-        });
-
-        if (!respuestaAuth.ok) {
-            alert('⚠️ Tu sesión ha expirado o no has iniciado sesión. Debes iniciar sesión para finalizar la compra.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const usuario = await respuestaAuth.json();
-        if (!usuario || (!usuario.email && !usuario.username)) {
-            alert('⚠️ Debes iniciar sesión para procesar tu pedido.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-        if (carrito.length === 0) {
-            mostrarToast('El carrito está vacío.', 'danger');
-            return;
-        }
-
-        const totalCompra = carrito.reduce((sum, item) => sum + (Number(item.precioUnitario) * item.cantidad), 0);
-
-        const nuevoPedido = {
-            nombreCliente: usuario.nombre ?? usuario.username ?? 'Cliente Web',
-            emailCliente: usuario.email ?? usuario.username ?? 'cliente@urbansteps.com',
-            ciudad: 'Ocaña',
-            metodoPago: 'Nequi',
-            total: totalCompra,
-            estado: 'PENDIENTE'
-        };
-
-        const res = await fetch('/api/pedidos', {
+        const respuesta = await fetch('/api/pedidos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify(nuevoPedido)
         });
 
-        if (res.ok) {
-            alert('¡Pedido registrado con éxito!');
-            localStorage.removeItem('carrito');
-            actualizarContador();
-            actualizarCarritoModal();
-            const modalElement = document.getElementById('modalCarrito');
-            if (modalElement) {
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) modalInstance.hide();
-            }
+        if (respuesta.ok) {
+            alert("¡Pedido realizado con éxito!");
+            localStorage.removeItem('carritoSteps');
+            if (typeof actualizarContadorCarrito === 'function') actualizarContadorCarrito();
+            if (typeof renderizarCarritoModal === 'function') renderizarCarritoModal();
         } else {
-            const errorTxt = await res.text();
-            alert('Error al procesar el pedido en el servidor: ' + errorTxt);
+            const err = await respuesta.text();
+            alert("Error al procesar el pedido: " + err);
         }
-    } catch (err) {
-        console.error(err);
-        alert('No se pudo conectar con el servidor backend para finalizar la compra.');
+    } catch (error) {
+        console.error("Error al finalizar compra:", error);
+        alert("No se pudo conectar con el servidor.");
     }
 }
 
@@ -750,6 +712,8 @@ window.eliminarProducto = async function(id) {
 window.exportarPDF = async function() {
     try {
         const respuesta = await fetch('/api/productos');
+        if (!respuesta.ok) throw new Error('Error al obtener la lista de productos');
+        
         const productos = await respuesta.json();
 
         if (!productos || productos.length === 0) {
@@ -757,8 +721,20 @@ window.exportarPDF = async function() {
             return;
         }
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        // Compatibilidad con distintas versiones CDN de jsPDF
+        const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+        if (!jsPDFClass) {
+            alert("La librería jsPDF no está cargada correctamente.");
+            return;
+        }
+
+        const doc = new jsPDFClass();
+
+        // Verificar plugin autoTable
+        if (typeof doc.autoTable !== 'function') {
+            alert("El plugin autoTable de jsPDF no está disponible.");
+            return;
+        }
 
         const ahora = new Date();
         const fechaHora = ahora.toLocaleString('es-CO', { 
@@ -788,9 +764,9 @@ window.exportarPDF = async function() {
             p.id || '',
             p.nombre || '',
             p.categoria || '',
-            `$ ${Number(p.precio || 0).toLocaleString()}`,
-            p.stock || p.cantidad || 0,
-            p.proveedor || ''
+            `$ ${Number(p.precio || 0).toLocaleString('es-CO')}`,
+            p.stock ?? p.cantidad ?? 0,
+            p.proveedor || 'N/A'
         ]);
 
         doc.autoTable({
@@ -817,11 +793,11 @@ window.exportarPDF = async function() {
             }
         });
 
-        doc.save(`Inventario_UrbanSteps_${ahora.toISOString().slice(0,10)}.pdf`);
+        doc.save(`Inventario_UrbanSteps_${ahora.toISOString().slice(0, 10)}.pdf`);
 
     } catch (error) {
         console.error("Error al exportar PDF:", error);
-        alert("No se pudo conectar con el servidor para generar el PDF.");
+        alert("No se pudo generar el reporte en PDF: " + error.message);
     }
 };
 
@@ -829,8 +805,23 @@ window.exportarPDF = async function() {
 window.ejecutarCambioPassword = async function(event) {
     event.preventDefault();
 
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
+    const inputCurrent = document.getElementById('currentPassword');
+    const inputNew = document.getElementById('newPassword');
+
+    if (!inputCurrent || !inputNew) return;
+
+    const currentPassword = inputCurrent.value.trim();
+    const newPassword = inputNew.value.trim();
+
+    if (!currentPassword || !newPassword) {
+        alert("Por favor completa todos los campos de contraseña.");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert("La nueva contraseña debe tener al menos 6 caracteres.");
+        return;
+    }
 
     try {
         const respuesta = await fetch('/api/auth/change-password', {
@@ -846,13 +837,19 @@ window.ejecutarCambioPassword = async function(event) {
         });
 
         if (respuesta.ok) {
-            alert("¡Contraseña actualizada correctamente! Por seguridad, te recomendamos iniciar sesión nuevamente.");
+            alert("¡Contraseña actualizada correctamente! Redirigiendo para iniciar sesión...");
             
             const modalElement = document.getElementById('modalCambiarPassword');
-            const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            if (modalInstance) modalInstance.hide();
+            if (modalElement && window.bootstrap) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) modalInstance.hide();
+            }
             
-            document.getElementById('formCambiarPassword').reset();
+            const form = document.getElementById('formCambiarPassword');
+            if (form) form.reset();
+
+            // Opcional: Redirigir al login si el backend requiere reautenticación
+            // window.location.href = '/login.html';
         } else {
             const errorTxt = await respuesta.text();
             alert("Error al cambiar la contraseña: " + errorTxt);
@@ -862,3 +859,33 @@ window.ejecutarCambioPassword = async function(event) {
         alert("No se pudo conectar con el servidor para cambiar la contraseña.");
     }
 };
+// Función auxiliar para agregar al carrito de forma segura por ID
+window.agregarAlCarritoRapidoById = function(id) {
+    if (!window.productosGlobal) return;
+    const producto = window.productosGlobal.find(p => p.id === id);
+    if (!producto) return;
+
+    const tallaDefault = (producto.tallas && producto.tallas.length > 0) ? producto.tallas[0] : 'Única';
+    const precioConDescuento = producto.descuento ? producto.precio * (1 - producto.descuento / 100) : producto.precio;
+
+    agregarAlCarritoRapido({
+        id: producto.id,
+        nombre: producto.nombre,
+        precio: Math.round(precioConDescuento),
+        talla: tallaDefault,
+        stock: producto.stock ?? producto.cantidad ?? 0,
+        imagen: producto.imagenUrl || producto.imagen || ''
+    });
+};
+
+// Generación HTML dentro de renderizarProductos (Fragmento del botón)
+/* 
+Dentro del map/loop de renderizarProductos, reemplaza el HTML del botón de comprar por este:
+*/
+const botonComprarHTML = `
+    <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
+        ${agotado ? 'disabled' : ''} 
+        onclick="agregarAlCarritoRapidoById(${producto.id})">
+        <i class="bi bi-cart-plus me-1"></i> ${agotado ? 'Agotado' : 'Agregar al carrito'}
+    </button>
+`;
