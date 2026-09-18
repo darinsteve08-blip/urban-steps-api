@@ -396,8 +396,14 @@ function renderizarProductos(listaProductos) {
         if (agotado) badgesSuperiores += `<span class="badge bg-dark me-1 shadow-sm">Agotado</span>`;
         else if (pocoStock) badgesSuperiores += `<span class="badge bg-warning text-dark me-1 shadow-sm">¡Últimas ${stock}!</span>`;
 
-        const tallaDefault = (producto.tallasDisponibles?.length > 0)
-            ? producto.tallasDisponibles[0] : 'Única';
+        // Generación limpia del botón de compra por ID
+        const botonComprarHTML = `
+            <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
+                ${agotado ? 'disabled' : ''}
+                onclick="agregarAlCarritoRapidoById(${producto.id})">
+                <i class="bi bi-${agotado ? 'x-circle' : 'cart-plus'} me-1"></i> ${agotado ? 'Agotado' : 'Añadir al carrito'}
+            </button>
+        `;
 
         html += `
             <div class="col">
@@ -448,18 +454,7 @@ function renderizarProductos(listaProductos) {
                                     </button>
                                 ` : ''}
                             </div>
-                            <button class="btn btn-comprar btn-sm w-100 fw-bold py-2 ${agotado ? 'disabled' : ''}"
-                                ${agotado ? 'disabled' : ''}
-                                onclick='agregarAlCarritoRapido(${JSON.stringify({
-                                    id: producto.id,
-                                    nombre: producto.nombre,
-                                    precio: Math.round(precioConDescuento),
-                                    talla: tallaDefault,
-                                    stock: stock,
-                                    imagen: producto.imagen
-                                })})'>
-                                ${agotado ? '<i class="bi bi-x-circle me-1"></i> Agotado' : '<i class="bi bi-cart-plus me-1"></i> Añadir al carrito'}
-                            </button>
+                            ${botonComprarHTML}
                         </div>
                     </div>
                 </div>
@@ -985,32 +980,21 @@ window.ejecutarCambioPassword = async function(event) {
     }
 };
 // Función auxiliar para agregar al carrito de forma segura por ID
+// Función auxiliar para agregar al carrito de forma segura por ID
 window.agregarAlCarritoRapidoById = function(id) {
     if (!window.productosGlobal) return;
     const producto = window.productosGlobal.find(p => p.id === id);
     if (!producto) return;
 
-    const tallaDefault = (producto.tallas && producto.tallas.length > 0) ? producto.tallas[0] : 'Única';
+    const talleDefault = (producto.talles && producto.talles.length > 0) ? producto.talles[0] : 'Única';
     const precioConDescuento = producto.descuento ? producto.precio * (1 - producto.descuento / 100) : producto.precio;
 
     agregarAlCarritoRapido({
         id: producto.id,
         nombre: producto.nombre,
         precio: Math.round(precioConDescuento),
-        talla: tallaDefault,
+        talla: talleDefault,
         stock: producto.stock ?? producto.cantidad ?? 0,
         imagen: producto.imagenUrl || producto.imagen || ''
     });
 };
-
-// Generación HTML dentro de renderizarProductos (Fragmento del botón)
-/* 
-Dentro del map/loop de renderizarProductos, reemplaza el HTML del botón de comprar por este:
-*/
-const botonComprarHTML = `
-    <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
-        ${agotado ? 'disabled' : ''} 
-        onclick="agregarAlCarritoRapidoById(${producto.id})">
-        <i class="bi bi-cart-plus me-1"></i> ${agotado ? 'Agotado' : 'Agregar al carrito'}
-    </button>
-`;
