@@ -165,8 +165,27 @@
             </div>
 
             <div class="row g-4">
+                <!-- Mis Favoritos (Wishlist) -->
+                <div class="col-md-3">
+                    <div class="card panel-card p-4" onclick="abrirModalFavoritos()">
+                        <div class="icon-bubble bg-light text-danger">
+                            <i class="bi bi-heart-fill" style="color: #e11d48;"></i>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="fw-bold mb-0">Mis Favoritos</h5>
+                            <span id="contadorFavoritosBadge" class="badge rounded-pill bg-danger" style="font-size: 11px;">0</span>
+                        </div>
+                        <p class="text-muted small mb-4 flex-grow-1">
+                            Zapatillas guardadas en tu lista de deseos para comprar más tarde.
+                        </p>
+                        <span class="btn btn-outline-dark w-100 rounded-pill fw-semibold py-2">
+                            Ver Favoritos <i class="bi bi-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Mis Pedidos -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card panel-card p-4" onclick="window.location='pedidos.html'">
                         <div class="icon-bubble bg-light text-danger">
                             <i class="bi bi-bag-check-fill" style="color: #FF5722;"></i>
@@ -182,12 +201,12 @@
                 </div>
 
                 <!-- Mi Carrito -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card panel-card p-4" onclick="window.location='carrito.html'">
                         <div class="icon-bubble bg-light text-primary">
                             <i class="bi bi-cart3 text-primary"></i>
                         </div>
-                        <h5 class="fw-bold mb-2">Mi Carrito de Compras</h5>
+                        <h5 class="fw-bold mb-2">Mi Carrito</h5>
                         <p class="text-muted small mb-4 flex-grow-1">
                             Revisa tus zapatillas seleccionadas, ajusta tallas, cantidades y procede al pago seguro.
                         </p>
@@ -198,12 +217,12 @@
                 </div>
 
                 <!-- Seguir Comprando -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card panel-card p-4" onclick="window.location='index.html#catalogo'">
                         <div class="icon-bubble bg-light text-success">
                             <i class="bi bi-fire text-danger"></i>
                         </div>
-                        <h5 class="fw-bold mb-2">Explorar Catálogo</h5>
+                        <h5 class="fw-bold mb-2">Catálogo</h5>
                         <p class="text-muted small mb-4 flex-grow-1">
                             Descubre los modelos más recientes, promociones del mes y lanzamientos exclusivos.
                         </p>
@@ -355,6 +374,31 @@
         </div>
     </div>
 
+    <!-- Modal Mis Favoritos (Wishlist) -->
+    <div class="modal fade" id="modalFavoritos" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow" style="border-radius: 24px; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #111827, #1f2937);">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-heart-fill text-danger fs-5"></i>
+                        <h5 class="modal-title fw-bold">Mi Lista de Deseos (Favoritos)</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="cuerpoFavoritosModal">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-danger" role="status"></div>
+                        <p class="text-muted mt-2">Cargando tus zapatillas favoritas...</p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    <a href="index.html#catalogo" class="btn btn-dark rounded-pill px-4 fw-semibold">Explorar Catálogo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-dark text-white-50 py-4 mt-5">
         <div class="container text-center small">
             <p class="mb-1 fw-bold text-white">Urban<span style="color: #FF5722;">Steps</span></p>
@@ -367,6 +411,156 @@
         let usuarioActual = null;
         let modalEditar = null;
         let modalPassword = null;
+        let modalFavoritosInstance = null;
+
+        function obtenerKeyFavoritos() {
+            const userIdentifier = usuarioActual?.email || usuarioActual?.username || 'invitado';
+            return `favoritos_${userIdentifier}`;
+        }
+
+        function obtenerIdsFavoritos() {
+            try {
+                const key = obtenerKeyFavoritos();
+                return JSON.parse(localStorage.getItem(key)) || [];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function actualizarContadorFavoritosBadge() {
+            const ids = obtenerIdsFavoritos();
+            const badge = document.getElementById('contadorFavoritosBadge');
+            if (badge) badge.textContent = ids.length;
+        }
+
+        async function abrirModalFavoritos() {
+            if (!modalFavoritosInstance) {
+                const el = document.getElementById('modalFavoritos');
+                if (el) modalFavoritosInstance = new bootstrap.Modal(el);
+            }
+            if (modalFavoritosInstance) modalFavoritosInstance.show();
+            await renderizarFavoritos();
+        }
+
+        async function renderizarFavoritos() {
+            const contenedor = document.getElementById('cuerpoFavoritosModal');
+            if (!contenedor) return;
+
+            const ids = obtenerIdsFavoritos();
+            actualizarContadorFavoritosBadge();
+
+            if (ids.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-heartbreak text-muted opacity-50" style="font-size: 56px;"></i>
+                        <h5 class="fw-bold mt-3 mb-1">Tu lista de deseos está vacía</h5>
+                        <p class="text-muted small mb-4">No has guardado zapatillas en tus favoritos todavía.</p>
+                        <a href="index.html#catalogo" class="btn btn-dark rounded-pill px-4 fw-semibold">
+                            <i class="bi bi-bag-plus me-1"></i> Explorar Catálogo
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/productos');
+                if (!res.ok) throw new Error('Error al cargar productos');
+                const productos = await res.json();
+
+                const listaFav = productos.filter(p => ids.some(id => String(id) === String(p.id)));
+
+                if (listaFav.length === 0) {
+                    contenedor.innerHTML = `
+                        <div class="text-center py-5 text-muted">
+                            <p>Los productos guardados ya no se encuentran en stock o fueron retirados.</p>
+                            <a href="index.html#catalogo" class="btn btn-outline-dark rounded-pill px-4">Ver Catálogo</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                contenedor.innerHTML = `
+                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                        ${listaFav.map(p => `
+                            <div class="col" id="card-fav-${p.id}">
+                                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-light">
+                                    <div class="row g-0 align-items-center h-100">
+                                        <div class="col-4">
+                                            <img src="${p.imagen || p.imagenUrl || ''}" class="img-fluid rounded-start h-100"
+                                                style="object-fit: cover; min-height: 125px; max-height: 140px; width: 100%;"
+                                                onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80'">
+                                        </div>
+                                        <div class="col-8">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <span class="badge bg-secondary mb-1" style="font-size: 10px;">${p.categoria || 'Urbana'}</span>
+                                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="quitarFavoritoPerfil(${p.id})" title="Quitar de favoritos">
+                                                        <i class="bi bi-trash fs-6"></i>
+                                                    </button>
+                                                </div>
+                                                <h6 class="card-title fw-bold mb-1 text-truncate" title="${p.nombre}">${p.nombre}</h6>
+                                                <div class="fw-bold text-danger mb-2" style="font-size: 14px;">
+                                                    $${Number(p.precio || 0).toLocaleString()} COP
+                                                </div>
+                                                <button class="btn btn-dark btn-sm rounded-pill w-100 fw-semibold" onclick="agregarAlCarritoDesdeFavoritos(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+                                                    <i class="bi bi-cart-plus me-1"></i> Al Carrito
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch(err) {
+                contenedor.innerHTML = `<div class="alert alert-danger">Error de conexión al cargar tus favoritos.</div>`;
+            }
+        }
+
+        function quitarFavoritoPerfil(id) {
+            const key = obtenerKeyFavoritos();
+            let ids = obtenerIdsFavoritos();
+            ids = ids.filter(it => String(it) !== String(id));
+            localStorage.setItem(key, JSON.stringify(ids));
+            mostrarToastPerfil('Zapatilla removida de tus favoritos 💔', 'info');
+            renderizarFavoritos();
+        }
+
+        function agregarAlCarritoDesdeFavoritos(prod) {
+            let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            let tallasArray = ['40'];
+            const campoTallas = prod.tallas || prod.talla;
+            if (campoTallas) {
+                if (typeof campoTallas === 'string') {
+                    tallasArray = campoTallas.replace(/[\[\]"]+/g, '').split(',').map(t => t.trim()).filter(Boolean);
+                } else if (Array.isArray(campoTallas)) {
+                    tallasArray = campoTallas;
+                }
+            }
+            const tallaDefault = tallasArray[0] || '40';
+
+            const indexExistente = carrito.findIndex(it => it.productoId === prod.id && it.talla === tallaDefault);
+            if (indexExistente !== -1) {
+                carrito[indexExistente].cantidad += 1;
+            } else {
+                carrito.push({
+                    productoId: prod.id,
+                    nombre: prod.nombre,
+                    precioUnitario: prod.precio,
+                    precio: prod.precio,
+                    talla: tallaDefault,
+                    cantidad: 1,
+                    stock: prod.stock || 10,
+                    imagen: prod.imagen || prod.imagenUrl || ''
+                });
+            }
+
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarContadorNav();
+            mostrarToastPerfil(`¡"${prod.nombre}" añadido al carrito! 🛒`, 'success');
+        }
 
         function actualizarContadorNav() {
             try {
@@ -387,6 +581,11 @@
                 if (response.ok) {
                     usuarioActual = await response.json();
                     actualizarUI(usuarioActual);
+                    actualizarContadorFavoritosBadge();
+
+                    if (window.location.hash === '#favoritos') {
+                        setTimeout(() => abrirModalFavoritos(), 450);
+                    }
 
                     const badgeRol = document.getElementById('badgeRol');
                     const rol = (usuarioActual.rol || '').toUpperCase();

@@ -341,6 +341,72 @@ function generarSkeletonLoading(cantidad) {
     return html;
 }
 
+// ==========================================
+// LISTA DE DESEOS (WISHLIST / FAVORITOS)
+// ==========================================
+function obtenerKeyFavoritos() {
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual;
+    const userIdentifier = usuario?.email || usuario?.username || 'invitado';
+    return `favoritos_${userIdentifier}`;
+}
+
+function obtenerFavoritos() {
+    try {
+        const key = obtenerKeyFavoritos();
+        return JSON.parse(localStorage.getItem(key)) || [];
+    } catch(e) {
+        return [];
+    }
+}
+window.obtenerFavoritos = obtenerFavoritos;
+
+function esProductoFavorito(productoId) {
+    const favs = obtenerFavoritos();
+    return favs.some(id => String(id) === String(productoId));
+}
+window.esProductoFavorito = esProductoFavorito;
+
+window.toggleFavorito = function(productoId, btnElement) {
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual;
+    if (!usuario || (!usuario.email && !usuario.username)) {
+        if (confirm("Inicia sesión para guardar zapatillas en tu Lista de Deseos ❤️. ¿Deseas iniciar sesión ahora?")) {
+            window.location.href = 'login.html';
+        }
+        return;
+    }
+
+    const key = obtenerKeyFavoritos();
+    let favs = obtenerFavoritos();
+    const existe = favs.some(id => String(id) === String(productoId));
+
+    if (existe) {
+        favs = favs.filter(id => String(id) !== String(productoId));
+        localStorage.setItem(key, JSON.stringify(favs));
+        if (btnElement) {
+            btnElement.innerHTML = '<i class="bi bi-heart text-secondary" style="font-size: 18px;"></i>';
+            btnElement.title = 'Añadir a Favoritos';
+        }
+        if (typeof mostrarToastGlobal === 'function') {
+            mostrarToastGlobal('Zapatilla eliminada de tus favoritos 💔', 'info');
+        }
+    } else {
+        favs.push(productoId);
+        localStorage.setItem(key, JSON.stringify(favs));
+        if (btnElement) {
+            btnElement.innerHTML = '<i class="bi bi-heart-fill text-danger" style="font-size: 18px;"></i>';
+            btnElement.title = 'Quitar de Favoritos';
+            btnElement.style.transform = 'scale(1.25)';
+            setTimeout(() => { btnElement.style.transform = 'scale(1)'; }, 200);
+        }
+        if (typeof mostrarToastGlobal === 'function') {
+            mostrarToastGlobal('¡Zapatilla añadida a tus favoritos! ❤️', 'success');
+        }
+    }
+
+    const badge = document.getElementById('contadorFavoritosBadge');
+    if (badge) badge.textContent = favs.length;
+};
+
 // RENDERIZADO DE PRODUCTOS EN CATÁLOGO
 function renderizarProductos(listaProductos) {
     const contenedor = document.getElementById('grid-productos-tienda') || document.getElementById('contenedor-productos');
@@ -379,6 +445,8 @@ function renderizarProductos(listaProductos) {
         if (agotado) badgesSuperiores += `<span class="badge bg-dark me-1 shadow-sm">Agotado</span>`;
         else if (pocoStock) badgesSuperiores += `<span class="badge bg-warning text-dark me-1 shadow-sm">¡Últimas ${stock}!</span>`;
 
+        const esFav = esProductoFavorito(producto.id);
+
         // Generación limpia del botón de compra por ID
         const botonComprarHTML = `
             <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
@@ -390,7 +458,7 @@ function renderizarProductos(listaProductos) {
 
         html += `
             <div class="col">
-                <div class="card card-producto h-100 shadow-sm border-0 overflow-hidden" data-id="${producto.id}">
+                <div class="card card-producto h-100 shadow-sm border-0 overflow-hidden position-relative" data-id="${producto.id}">
                     <div class="position-relative" style="cursor:pointer;" onclick="verDetalle(${producto.id})">
                         <img src="${producto.imagen}" class="card-img-top" alt="${producto.nombre}"
                             style="height: 210px; object-fit: cover;"
@@ -399,6 +467,12 @@ function renderizarProductos(listaProductos) {
                         <div class="position-absolute top-2 start-2 d-flex flex-wrap gap-1">
                             ${badgesSuperiores}
                         </div>
+                        <button class="btn-favorito position-absolute top-0 end-0 m-2 rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center"
+                            style="width: 38px; height: 38px; background: rgba(255, 255, 255, 0.92); z-index: 5; cursor: pointer; transition: transform 0.2s ease;"
+                            onclick="event.stopPropagation(); toggleFavorito(${producto.id}, this)"
+                            title="${esFav ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}">
+                            <i class="bi bi-heart${esFav ? '-fill text-danger' : ' text-secondary'}" style="font-size: 18px;"></i>
+                        </button>
                     </div>
 
                     <div class="card-body d-flex flex-column">
@@ -1016,6 +1090,12 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="perfil.html">
                             <i class="bi bi-person-circle text-dark"></i>
                             <span>Mi Perfil</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="perfil.html#favoritos">
+                            <i class="bi bi-heart-fill text-danger"></i>
+                            <span>Mis Favoritos</span>
                         </a>
                     </li>
                     ${(esAdmin || esOperario) ? `
