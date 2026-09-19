@@ -41,7 +41,15 @@ function inicializarSesion() {
     const usuario = obtenerUsuarioSesion();
     const estaEnPerfil = window.location.pathname.includes('perfil.html');
 
-    if (usuario) {
+    if (usuario && (usuario.email || usuario.nombre)) {
+        const rol = (usuario.rol || '').toUpperCase();
+        const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
+        const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
+        window.usuarioEsAdminGlobal = esAdmin || esOperario;
+        window.usuarioActual = usuario;
+
+        actualizarInterfazUsuario(usuario, esAdmin, esOperario);
+
         // Actualiza indicadores de rol y perfil en el navbar si existen
         const rolBadge = document.getElementById('rol-badge');
         if (rolBadge && usuario.rol) {
@@ -136,37 +144,29 @@ function verificarAccesoAdminUI() {
     }
 }
 
-// Función de seguridad en tiempo real para verificar permiso de administrador con Spring Boot
-window.verificarAccesoAdmin = async function(event) {
+// Función para verificar permiso de administrador y abrir el modal de nuevo producto
+window.verificarAccesoAdmin = function(event) {
     if (event) event.preventDefault();
 
-    try {
-        const respuesta = await fetch('/api/auth/me', {
-            credentials: 'include'
-        });
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual;
+    const rol = (usuario?.rol || '').toUpperCase();
+    const esAdmin = rol === 'ADMIN' || rol === 'ROLE_ADMIN' || rol === 'OPERARIO' || rol === 'ROLE_OPERARIO' || window.usuarioEsAdminGlobal;
 
-        if (!respuesta.ok) {
-            alert('Debes iniciar sesión como Administrador para agregar productos.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const data = await respuesta.json();
-
-        if (data.rol === 'ADMIN' || data.rol === 'ROLE_ADMIN' || data.esAdmin) {
-            window.usuarioEsAdminGlobal = true;
-            const modal = document.getElementById('modalAgregarProducto');
-            if (modal) {
-                modal.style.display = 'block';
-            } else {
-                console.log('Formulario listo para mostrarse');
-            }
-        } else {
-            alert('Acceso denegado. Esta sección es exclusiva para administradores.');
-        }
-    } catch (error) {
-        alert('Debes iniciar sesión primero.');
+    if (!esAdmin) {
+        alert('Debes iniciar sesión como Administrador para agregar productos.');
         window.location.href = 'login.html';
+        return;
+    }
+
+    const modalEl = document.getElementById('modalAgregarProducto');
+    if (modalEl) {
+        if (window.bootstrap && bootstrap.Modal) {
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        } else {
+            modalEl.style.display = 'block';
+            modalEl.classList.add('show');
+        }
     }
 };
 
@@ -628,45 +628,6 @@ async function finalizarCompra() {
 
     window.location.href = 'checkout.html';
 }
-
-    const nuevoPedido = {
-        nombreCliente: usuario.nombre ?? usuario.username ?? 'Cliente Web',
-        emailCliente: usuario.email ?? usuario.username ?? 'cliente@urbansteps.com',
-        ciudad: 'Ocaña',
-        metodoPago: 'Nequi',
-        total: totalCompra,
-        estado: 'PENDIENTE',
-        detalles: carrito.map(item => ({
-            productoId: item.productoId,
-            nombre: item.nombre,
-            cantidad: item.cantidad,
-            precio: item.precio,
-            talla: item.talla
-        }))
-    };
-
-    try {
-        const respuesta = await fetch('/api/pedidos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(nuevoPedido)
-        });
-
-        if (respuesta.ok) {
-            alert("¡Pedido realizado con éxito!");
-            localStorage.removeItem('carritoSteps');
-            if (typeof actualizarContadorCarrito === 'function') actualizarContadorCarrito();
-            if (typeof renderizarCarritoModal === 'function') renderizarCarritoModal();
-        } else {
-            const err = await respuesta.text();
-            alert("Error al procesar el pedido: " + err);
-        }
-    } catch (error) {
-        console.error("Error al finalizar compra:", error);
-        alert("No se pudo conectar con el servidor.");
-    }
-}
 window.finalizarCompra = finalizarCompra;
 
 // ==========================================
@@ -1056,12 +1017,12 @@ async function verificarSesion() {
 
 function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
     // 1. Reemplazar el botón de Iniciar Sesión por el dropdown del usuario
-    const btnLogin = document.getElementById('btnLoginNavbar');
-    if (btnLogin) {
+    const contenedorExistente = document.getElementById('dropdownUsuarioNav') || document.getElementById('btnLoginNavbar');
+    if (contenedorExistente) {
         const nombreMostrar = usuario.nombre || usuario.email || 'Mi Cuenta';
         const inicial = nombreMostrar.charAt(0).toUpperCase();
 
-        btnLogin.outerHTML = `
+        contenedorExistente.outerHTML = `
             <div class="dropdown" id="dropdownUsuarioNav">
                 <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle"

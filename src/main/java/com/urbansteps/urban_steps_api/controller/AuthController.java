@@ -31,6 +31,9 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
+
     @PostMapping("/registro")
     public ResponseEntity<?> registrarCliente(@RequestBody Usuario nuevoUsuario) {
         if (usuarioRepository.existsByEmail(nuevoUsuario.getEmail())) {
@@ -53,7 +56,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> iniciarSesion(@RequestBody Map<String, String> credenciales, HttpServletRequest request) {
+    public ResponseEntity<?> iniciarSesion(@RequestBody Map<String, String> credenciales, 
+                                           HttpServletRequest request, 
+                                           jakarta.servlet.http.HttpServletResponse response) {
         try {
             String email = credenciales.get("email");
             String password = credenciales.get("password");
@@ -66,13 +71,16 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(email, password)
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            org.springframework.security.core.context.SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            securityContextRepository.saveContext(context, request, response);
 
             // Guardado explícito del contexto de seguridad en la sesión HTTP
             HttpSession session = request.getSession(true);
             session.setAttribute(
                 HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, 
-                SecurityContextHolder.getContext()
+                context
             );
 
             Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);

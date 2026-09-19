@@ -33,8 +33,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
-            // 1. VITAL: Obliga a Spring Security a guardar el contexto de autenticación en la sesión HTTP
-            .securityContext(sc -> sc.requireExplicitSave(false)) 
+            // 1. VITAL: Configura repositorio de contexto de seguridad explícito y compatible con sesiones
+            .securityContext(sc -> sc
+                .securityContextRepository(securityContextRepository())
+                .requireExplicitSave(false)
+            ) 
             
             .sessionManagement(sess -> sess
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
@@ -88,6 +91,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public org.springframework.security.web.context.SecurityContextRepository securityContextRepository() {
+        return new org.springframework.security.web.context.HttpSessionSecurityContextRepository();
     }
 
     @Bean
