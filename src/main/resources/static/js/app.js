@@ -193,8 +193,8 @@ window.filtrarCategoria = function(categoria, boton) {
 function aplicarFiltrosProductos() {
     let listaFiltrada = window.productosGlobal ?? [];
 
+    // 1. Filtro por Categoría
     const filtroNorm = normalizarTexto(categoriaActualFiltro);
-
     if (filtroNorm !== 'TODOS' && filtroNorm !== 'TODAS' && filtroNorm !== '') {
         listaFiltrada = listaFiltrada.filter(p => {
             const catProducto = normalizarTexto(p.categoria);
@@ -208,6 +208,7 @@ function aplicarFiltrosProductos() {
         });
     }
 
+    // 2. Filtro por Búsqueda de Texto
     const inputBuscar = document.getElementById('input-buscar-tienda');
     if (inputBuscar && inputBuscar.value.trim() !== '') {
         const texto = normalizarTexto(inputBuscar.value);
@@ -217,9 +218,82 @@ function aplicarFiltrosProductos() {
         );
     }
 
+    // 3. Filtro por Talla
+    const selectTalla = document.getElementById('filtro-talla');
+    const tallaFiltro = selectTalla ? selectTalla.value : 'TODAS';
+    if (tallaFiltro && tallaFiltro !== 'TODAS') {
+        listaFiltrada = listaFiltrada.filter(p => {
+            if (Array.isArray(p.tallasDisponibles) && p.tallasDisponibles.length > 0) {
+                return p.tallasDisponibles.some(t => String(t).trim() === String(tallaFiltro));
+            }
+            if (typeof p.tallas === 'string') {
+                return p.tallas.split(',').map(t => t.trim()).includes(String(tallaFiltro));
+            }
+            if (p.talla) {
+                return String(p.talla).trim() === String(tallaFiltro);
+            }
+            return false;
+        });
+    }
+
+    // 4. Filtro por Rango de Precios (Slider)
+    const sliderPrecio = document.getElementById('filtro-precio-slider');
+    if (sliderPrecio) {
+        const valMax = Number(sliderPrecio.value);
+        const maxPermitido = Number(sliderPrecio.max || 800000);
+        if (valMax < maxPermitido) {
+            listaFiltrada = listaFiltrada.filter(p => {
+                const precioFinal = (p.descuento > 0)
+                    ? (p.precio * (1 - p.descuento / 100))
+                    : p.precio;
+                return precioFinal <= valMax;
+            });
+        }
+    }
+
     listaFiltrada = ordenarListaProductos(listaFiltrada);
     renderizarProductos(listaFiltrada);
 }
+window.aplicarFiltrosProductos = aplicarFiltrosProductos;
+
+window.actualizarLabelPrecio = function(val) {
+    const label = document.getElementById('valor-precio-filtro');
+    const slider = document.getElementById('filtro-precio-slider');
+    if (!label) return;
+    const max = slider ? Number(slider.max || 800000) : 800000;
+    if (Number(val) >= max) {
+        label.innerText = 'Sin límite';
+        label.className = 'badge bg-dark fw-bold px-3 py-1 rounded-pill';
+    } else {
+        label.innerText = `Hasta $${Number(val).toLocaleString('es-CO')} COP`;
+        label.className = 'badge bg-danger fw-bold px-3 py-1 rounded-pill';
+    }
+};
+
+window.limpiarFiltrosAvanzados = function() {
+    const inputBuscar = document.getElementById('input-buscar-tienda');
+    if (inputBuscar) inputBuscar.value = '';
+
+    const selectTalla = document.getElementById('filtro-talla');
+    if (selectTalla) selectTalla.value = 'TODAS';
+
+    const slider = document.getElementById('filtro-precio-slider');
+    if (slider) {
+        slider.value = slider.max || 800000;
+        window.actualizarLabelPrecio(slider.value);
+    }
+
+    const selectOrdenar = document.getElementById('select-ordenar');
+    if (selectOrdenar) selectOrdenar.value = 'FECHA_DESC';
+    ordenActualProductos = 'FECHA_DESC';
+
+    const primerBoton = document.querySelector('#botones-categorias button');
+    if (primerBoton) {
+        filtrarCategoria('TODOS', primerBoton);
+    } else {
+        aplicarFiltrosProductos();
+    }
+};
 
 window.ordenarProductos = function(valor) {
     ordenActualProductos = valor;

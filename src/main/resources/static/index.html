@@ -136,6 +136,55 @@
             <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Edicion Especial', this)">👑 Edición Especial</button>
         </div>
 
+        <!-- Filtros Rápidos Avanzados: Talla y Rango de Precios -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-3 align-items-center">
+                <!-- Filtro por Talla -->
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label small fw-bold text-muted mb-1">
+                        <i class="bi bi-rulers me-1 text-danger"></i>Filtrar por Talla:
+                    </label>
+                    <select id="filtro-talla" class="form-select rounded-pill fw-semibold" onchange="aplicarFiltrosProductos()">
+                        <option value="TODAS">👟 Todas las tallas</option>
+                        <option value="36">Talla 36 (US 4)</option>
+                        <option value="37">Talla 37 (US 5)</option>
+                        <option value="38">Talla 38 (US 6)</option>
+                        <option value="39">Talla 39 (US 7)</option>
+                        <option value="40">Talla 40 (US 8)</option>
+                        <option value="41">Talla 41 (US 9)</option>
+                        <option value="42">Talla 42 (US 10)</option>
+                        <option value="43">Talla 43 (US 11)</option>
+                        <option value="44">Talla 44 (US 12)</option>
+                        <option value="45">Talla 45 (US 13)</option>
+                    </select>
+                </div>
+
+                <!-- Filtro por Rango de Precio (Slider) -->
+                <div class="col-md-5 col-sm-6">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label small fw-bold text-muted mb-0">
+                            <i class="bi bi-tag-fill text-danger me-1"></i>Precio Máximo:
+                        </label>
+                        <span id="valor-precio-filtro" class="badge bg-dark fw-bold px-3 py-1 rounded-pill">Sin límite</span>
+                    </div>
+                    <input type="range" class="form-range" id="filtro-precio-slider" min="100000" max="800000" step="25000" value="800000"
+                        oninput="actualizarLabelPrecio(this.value); aplicarFiltrosProductos()">
+                    <div class="d-flex justify-content-between text-muted" style="font-size: 11px;">
+                        <span>$100.000</span>
+                        <span>$450.000</span>
+                        <span>$800.000+ (Todos)</span>
+                    </div>
+                </div>
+
+                <!-- Botón de Limpiar Filtros -->
+                <div class="col-md-3 col-12 d-flex align-items-end justify-content-md-end">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 w-100 fw-semibold" onclick="limpiarFiltrosAvanzados()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="grid-productos-tienda">
             <!-- Los productos se inyectan dinámicamente aquí desde app.js -->
         </div>
