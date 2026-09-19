@@ -378,20 +378,34 @@
                 const res = await fetch('/api/auth/current', { credentials: 'include' });
                 if (res.ok) {
                     usuarioSesion = await res.json();
+                    localStorage.setItem('usuario', JSON.stringify(usuarioSesion));
                 } else {
-                    const local = localStorage.getItem('usuario');
-                    if (local) usuarioSesion = JSON.parse(local);
+                    usuarioSesion = null;
+                    localStorage.removeItem('usuario');
                 }
             } catch (e) {
-                const local = localStorage.getItem('usuario');
-                if (local) usuarioSesion = JSON.parse(local);
+                usuarioSesion = null;
             }
+
+            // Actualizar navbar con el estado de la sesión
+            actualizarNavbarSesion(usuarioSesion);
 
             if (!usuarioSesion) {
                 document.getElementById('tabla-pedidos').innerHTML =
-                    `<tr><td colspan="8" class="text-center py-5 text-danger">
-                        <i class="bi bi-lock-fill fs-2 d-block mb-2"></i>
-                        Debes iniciar sesión para consultar tus pedidos. <a href="login.html" class="fw-bold">Inicia Sesión aquí</a>
+                    `<tr><td colspan="8" class="text-center py-5">
+                        <div class="card border-0 shadow-sm p-4 mx-auto rounded-4 bg-white" style="max-width: 480px;">
+                            <i class="bi bi-shield-lock-fill text-warning fs-1 d-block mb-3"></i>
+                            <h5 class="fw-bold mb-2">Sesión Requerida</h5>
+                            <p class="text-muted small mb-4">Para gestionar o rastrear pedidos, debes iniciar sesión con tu cuenta de Administrador o Cliente.</p>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="login.html?redirect=pedidos.html" class="btn btn-dark rounded-pill px-4 fw-bold">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                                </a>
+                                <a href="index.html" class="btn btn-outline-dark rounded-pill px-4 fw-semibold">
+                                    Ir a la Tienda
+                                </a>
+                            </div>
+                        </div>
                     </td></tr>`;
                 return false;
             }
@@ -401,6 +415,33 @@
 
             configurarVistaPorRol();
             return true;
+        }
+
+        function actualizarNavbarSesion(u) {
+            const cont = document.getElementById('nav-usuario-pd');
+            if (!cont) return;
+            if (u && (u.nombre || u.email)) {
+                cont.innerHTML = `
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-semibold small">
+                        <i class="bi bi-person-circle me-1"></i>${(u.nombre || u.email).split(' ')[0]}
+                    </span>
+                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="cerrarSesionPedidos()">
+                        <i class="bi bi-box-arrow-right"></i> Salir
+                    </button>
+                `;
+            } else {
+                cont.innerHTML = `
+                    <a href="login.html?redirect=pedidos.html" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                    </a>
+                `;
+            }
+        }
+
+        async function cerrarSesionPedidos() {
+            try { await fetch('/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
+            localStorage.removeItem('usuario');
+            window.location.href = 'index.html';
         }
 
         function configurarVistaPorRol() {
@@ -414,7 +455,7 @@
                 badge.className = 'badge rounded-pill bg-danger mb-2 px-3 py-1 fw-semibold';
                 badge.innerHTML = '<i class="bi bi-shield-lock-fill me-1"></i> Modo Administrador';
                 titulo.innerHTML = '<i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Gestión Integral de Pedidos';
-                subtitulo.textContent = 'Panel operativo: seguimiento de envíos, comprobantes y actualización de guías';
+                subtitulo.textContent = 'Panel operativo: cambio de estado rápido, transportadoras y asignación de guías';
                 if (grafico) grafico.style.display = 'block';
                 if (btnPdf) btnPdf.style.display = 'inline-block';
 
@@ -429,8 +470,8 @@
                         <th>Ciudad</th>
                         <th>Fecha</th>
                         <th>Total</th>
-                        <th>Estado</th>
-                        <th>Despacho</th>
+                        <th>Cambio Rápido de Estado</th>
+                        <th>Despacho / Guía</th>
                         <th>Acción</th>
                     </tr>`;
             } else {
@@ -463,7 +504,6 @@
             if (!autenticado) return;
 
             try {
-                // Admin carga /api/pedidos, Cliente carga /api/pedidos/mis-pedidos
                 const url = esUsuarioAdmin ? '/api/pedidos' : '/api/pedidos/mis-pedidos';
                 const res = await fetch(url, { credentials: 'include' });
 
@@ -471,7 +511,7 @@
                     todosLosPedidos = await res.json();
                     filtrarPedidos();
                 } else if (res.status === 403 || res.status === 401) {
-                    // Fallback a mis pedidos si no tiene permisos de admin
+                    // Si expiró la sesión o no tiene permisos de admin
                     const resMios = await fetch('/api/pedidos/mis-pedidos', { credentials: 'include' });
                     if (resMios.ok) {
                         esUsuarioAdmin = false;
@@ -479,7 +519,17 @@
                         todosLosPedidos = await resMios.json();
                         filtrarPedidos();
                     } else {
-                        throw new Error('No autorizado');
+                        document.getElementById('tabla-pedidos').innerHTML =
+                            `<tr><td colspan="8" class="text-center py-5">
+                                <div class="card border-0 shadow-sm p-4 mx-auto rounded-4 bg-white" style="max-width: 480px;">
+                                    <i class="bi bi-exclamation-triangle text-warning fs-1 d-block mb-3"></i>
+                                    <h5 class="fw-bold mb-2">Sesión Expirada</h5>
+                                    <p class="text-muted small mb-4">El servidor se actualizó. Por favor vuelve a iniciar sesión con tu cuenta.</p>
+                                    <a href="login.html?redirect=pedidos.html" class="btn btn-dark rounded-pill px-4 fw-bold">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                                    </a>
+                                </div>
+                            </td></tr>`;
                     }
                 } else {
                     throw new Error('Error al consultar pedidos');
@@ -489,10 +539,71 @@
                 document.getElementById('tabla-pedidos').innerHTML =
                     `<tr><td colspan="8" class="text-center py-5 text-danger">
                         <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
-                        Error al cargar pedidos. <a href="login.html" class="fw-bold text-decoration-none">Inicia sesión</a>
+                        Error al cargar pedidos. <a href="login.html?redirect=pedidos.html" class="fw-bold text-decoration-none">Inicia sesión</a>
                     </td></tr>`;
             }
         }
+
+        // =======================================================
+        // PASO 4: CAMBIO DE ESTADO RÁPIDO DIRECTO EN LA TABLA ADMIN
+        // =======================================================
+        async function cambiarEstadoRapidoDirecto(id, nuevoEstado) {
+            const pedido = todosLosPedidos.find(p => p.id === id);
+            if (!pedido) return;
+
+            // Si se pasa a EN_CAMINO y no tiene transportadora o guía, solicitamos los datos
+            let transportadora = pedido.transportadora || '';
+            let numeroGuia = pedido.numeroGuia || '';
+
+            if (nuevoEstado === 'EN_CAMINO' && (!transportadora || !numeroGuia)) {
+                const transpIngresada = prompt(`Vas a despachar el Pedido #${id} 🚚.\nIngresa la transportadora (ej: Servientrega, Inter Rapidísimo, Coordinadora, Envía):`, transportadora || 'Servientrega');
+                if (transpIngresada === null) {
+                    filtrarPedidos(); // Revertir select en UI
+                    return;
+                }
+                const guiaIngresada = prompt(`Ingresa el número de guía de ${transpIngresada}:`, numeroGuia || '');
+                if (guiaIngresada === null) {
+                    filtrarPedidos(); // Revertir select en UI
+                    return;
+                }
+                transportadora = transpIngresada.trim();
+                numeroGuia = guiaIngresada.trim();
+            } else if (nuevoEstado === 'CANCELADO') {
+                if (!confirm(`¿Estás seguro de CANCELAR el pedido #${id}? El stock será reestablecido en la tienda.`)) {
+                    filtrarPedidos();
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch(`/api/pedidos/${id}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        estado: nuevoEstado,
+                        transportadora: transportadora,
+                        numeroGuia: numeroGuia
+                    })
+                });
+
+                if (res.ok) {
+                    mostrarToast(`¡Pedido #${id} actualizado a ${nuevoEstado}! ✅`, 'success');
+                    // Actualizar en memoria y volver a renderizar sin recargar página
+                    pedido.estado = nuevoEstado;
+                    pedido.transportadora = transportadora;
+                    pedido.numeroGuia = numeroGuia;
+                    filtrarPedidos();
+                } else {
+                    mostrarToast('No se pudo actualizar el estado.', 'error');
+                    filtrarPedidos();
+                }
+            } catch(e) {
+                mostrarToast('Error de conexión con el servidor.', 'error');
+                filtrarPedidos();
+            }
+        }
+        window.cambiarEstadoRapidoDirecto = cambiarEstadoRapidoDirecto;
 
         function renderizarTabla(lista) {
             const tbody = document.getElementById('tabla-pedidos');
@@ -518,10 +629,25 @@
                     const tieneGuia = p.transportadora || p.numeroGuia;
                     const guiaHtml = tieneGuia
                         ? `<div class="d-flex flex-column gap-1">
-                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1"></i>${p.transportadora || 'Envío'}</span>
+                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1 text-danger"></i>${p.transportadora || 'Envío'}</span>
                                ${p.numeroGuia ? `<span class="guia-tag" onclick="copiarGuia('${p.numeroGuia}')" title="Clic para copiar"><i class="bi bi-clipboard me-1"></i>${p.numeroGuia}</span>` : ''}
                            </div>`
-                        : `<span class="text-muted small fst-italic">Sin asignar</span>`;
+                        : `<span class="badge bg-light text-secondary border">Sin guía</span>`;
+
+                    // SELECT RÁPIDO DE ESTADOS POR FILA
+                    const selectEstadoRapido = `
+                        <select class="form-select form-select-sm rounded-pill fw-semibold shadow-sm"
+                            style="font-size: 11px; min-width: 145px; background-color: #f8fafc; border: 1.5px solid #cbd5e1;"
+                            onchange="cambiarEstadoRapidoDirecto(${p.id}, this.value)"
+                            onclick="event.stopPropagation()">
+                            <option value="PENDIENTE" ${p.estado === 'PENDIENTE' ? 'selected' : ''}>📝 Recibido</option>
+                            <option value="PAGADO" ${p.estado === 'PAGADO' ? 'selected' : ''}>💳 Pago OK</option>
+                            <option value="EN_PREPARACION" ${p.estado === 'EN_PREPARACION' ? 'selected' : ''}>📦 En Bodega</option>
+                            <option value="EN_CAMINO" ${p.estado === 'EN_CAMINO' ? 'selected' : ''}>🚚 En Camino</option>
+                            <option value="COMPLETADO" ${p.estado === 'COMPLETADO' ? 'selected' : ''}>🏠 Entregado</option>
+                            <option value="CANCELADO" ${p.estado === 'CANCELADO' ? 'selected' : ''}>❌ Cancelado</option>
+                        </select>
+                    `;
 
                     return `
                         <tr style="cursor: pointer;" onclick="verDetalles(${p.id})">
@@ -533,11 +659,11 @@
                             <td>${p.ciudad || 'N/D'}</td>
                             <td class="small">${fmtFecha(p.fechaCreacion || p.fecha)}</td>
                             <td class="fw-bold text-danger">${fmt(p.total)}</td>
-                            <td>${badgeEstado(p.estado)}</td>
+                            <td onclick="event.stopPropagation()">${selectEstadoRapido}</td>
                             <td>${guiaHtml}</td>
                             <td onclick="event.stopPropagation()">
                                 <button class="btn btn-dark btn-sm rounded-pill px-3 fw-semibold" onclick="verDetalles(${p.id})">
-                                    <i class="bi bi-eye me-1"></i> Gestionar
+                                    <i class="bi bi-eye me-1"></i> Detalle
                                 </button>
                             </td>
                         </tr>
@@ -548,7 +674,7 @@
                     const tieneGuia = p.transportadora || p.numeroGuia;
                     const guiaHtml = tieneGuia
                         ? `<div class="d-flex flex-column gap-1">
-                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1"></i>${p.transportadora || 'En coordinación'}</span>
+                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1 text-danger"></i>${p.transportadora || 'En coordinación'}</span>
                                ${p.numeroGuia ? `<span class="guia-tag" onclick="copiarGuia('${p.numeroGuia}')" title="Clic para copiar"><i class="bi bi-clipboard me-1"></i>${p.numeroGuia}</span>` : ''}
                            </div>`
                         : `<span class="badge bg-light text-secondary border">Asignando guía...</span>`;
@@ -573,6 +699,11 @@
                     `;
                 }).join('');
             }
+
+            renderizarBotonesPaginacion(lista.length);
+            if (esUsuarioAdmin) actualizarGrafico(lista);
+            actualizarMetricas(lista);
+        }
 
             renderizarBotonesPaginacion(lista.length);
             if (esUsuarioAdmin) actualizarGrafico(lista);

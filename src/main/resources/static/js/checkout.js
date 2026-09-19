@@ -54,7 +54,7 @@ function verificarMetodoPago() {
     if (metodoSelect === 'Nequi' || metodoSelect === 'Daviplata') {
         contenidoDinamico.innerHTML = `
             <h6 class="text-primary fw-bold mb-2">Pago por ${metodoSelect}</h6>
-            <p class="small text-muted mb-2">Transfiere al número de la tienda: <strong>300 123 4567</strong></p>
+            <p class="small text-muted mb-2">Transfiere al número de la tienda: <strong>313 804 4913</strong></p>
             <div class="mb-2">
                 <label class="form-label small fw-bold">Celular desde el que realizas el pago:</label>
                 <input type="text" id="pago-celular" class="form-control form-control-sm" placeholder="Ej: 3109876543">
