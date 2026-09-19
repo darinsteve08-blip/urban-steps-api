@@ -465,18 +465,8 @@ document.getElementById('btn-agregar').addEventListener('click', async () => {
         return;
     }
 
-    try {
-        const respuesta = await fetch('/api/auth/me', { credentials: 'include' });
-        if (!respuesta.ok) {
-            mostrarToastDetalle('⚠️ Debes iniciar sesión para añadir productos al carrito', 'warning');
-            setTimeout(() => window.location.href = 'login.html?redirect=detalle.html?id=' + productoId, 1500);
-            return;
-        }
-    } catch(e) {
-        mostrarToastDetalle('⚠️ Error de conexión. Inicia sesión para continuar.', 'warning');
-        setTimeout(() => window.location.href = 'login.html', 1500);
-        return;
-    }
+    // Se permite añadir al carrito sin haber iniciado sesión previamente;
+    // el inicio de sesión se exigirá al momento de finalizar la compra (checkout).
 
     let carrito;
     try { carrito = JSON.parse(localStorage.getItem('carrito')) || []; } catch(e) { carrito = []; }

@@ -107,7 +107,7 @@
             const bg = tipo === 'success' ? 'linear-gradient(135deg, #16a34a, #22c55e)'
                       : tipo === 'error' ? 'linear-gradient(135deg, #dc2626, #ef4444)'
                       : 'linear-gradient(135deg, #2563eb, #3b82f6)';
-            const icono = tipo === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' : 'info-circle-fill';
+            const icono = tipo === 'success' ? 'check-circle-fill' : (tipo === 'error' ? 'exclamation-triangle-fill' : 'info-circle-fill');
             const toast = document.createElement('div');
             toast.id = id;
             toast.style.cssText = `background:${bg};color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.2);margin-bottom:12px;display:flex;align-items:center;gap:12px;min-width:300px;font-family:'Poppins',sans-serif;font-weight:500;transform:translateX(120%);transition:transform 0.35s ease;`;

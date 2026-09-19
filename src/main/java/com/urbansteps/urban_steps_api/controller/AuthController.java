@@ -75,7 +75,16 @@ public class AuthController {
                 SecurityContextHolder.getContext()
             );
 
-            return ResponseEntity.ok(Map.of("mensaje", "¡Login exitoso!", "email", email));
+            Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
+            String nombre = (usuario != null && usuario.getNombre() != null) ? usuario.getNombre() : "";
+            String rol = (usuario != null && usuario.getRol() != null) ? usuario.getRol() : "ROLE_USER";
+
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "¡Login exitoso!",
+                "email", email,
+                "nombre", nombre,
+                "rol", rol
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Correo o contraseña incorrectos.");
         }

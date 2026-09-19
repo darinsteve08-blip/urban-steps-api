@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarProductos();
     verificarAccesoAdminUI();
     verificarSesion();
+    actualizarContadorCarrito();
+    actualizarModalCarritoMini();
+
+    const modalCarritoEl = document.getElementById('modalCarrito');
+    if (modalCarritoEl) {
+        modalCarritoEl.addEventListener('show.bs.modal', actualizarModalCarritoMini);
+    }
 });
 
 // ==========================================
@@ -468,8 +475,63 @@ function renderizarProductos(listaProductos) {
 // ==========================================
 // OPERACIONES DEL CARRITO Y COMPRA
 // ==========================================
+
+// Función unificada para actualizar el contador del carrito en el navbar
+function actualizarContadorCarrito() {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const total = carrito.reduce((acc, item) => acc + (item.cantidad || 1), 0);
+    document.querySelectorAll('#contador-carrito').forEach(el => { el.textContent = total; });
+}
+window.actualizarContadorCarrito = actualizarContadorCarrito;
+
+// Función para actualizar el modal mini del carrito (en index.html)
+function actualizarModalCarritoMini() {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const cuerpo = document.getElementById('cuerpo-carrito-tienda');
+    const totalSpan = document.getElementById('carrito-total-tienda');
+    if (!cuerpo) return;
+
+    if (carrito.length === 0) {
+        cuerpo.innerHTML = `<p class="text-muted text-center py-2">El carrito está vacío.</p>`;
+        if (totalSpan) totalSpan.innerText = '0';
+        return;
+    }
+
+    let total = 0;
+    let html = '';
+    carrito.forEach((p, index) => {
+        const subtotal = Number(p.precioUnitario) * (p.cantidad || 1);
+        total += subtotal;
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                <div class="d-flex align-items-center gap-2">
+                    ${p.imagen ? `<img src="${p.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;" onerror="this.style.display='none'">` : ''}
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="font-size:13px;">${p.nombre}</h6>
+                        <small class="text-muted">${p.cantidad}x $${Number(p.precioUnitario).toLocaleString()} COP</small>
+                        ${p.talla ? `<br><small class="text-secondary">Talla: ${p.talla}</small>` : ''}
+                    </div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" onclick="quitarDelCarritoMini(${index})"><i class="bi bi-trash"></i></button>
+            </div>
+        `;
+    });
+    cuerpo.innerHTML = html;
+    if (totalSpan) totalSpan.innerText = total.toLocaleString();
+}
+window.actualizarModalCarritoMini = actualizarModalCarritoMini;
+
+window.quitarDelCarritoMini = function(index) {
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    carrito.splice(index, 1);
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    actualizarModalCarritoMini();
+};
+
 function agregarAlCarritoRapido(info) {
-    let carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
+    // Usamos la clave 'carrito' para ser consistentes con carrito.html y checkout.html
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
     const indexExistente = carrito.findIndex(it => it.productoId === info.id && it.talla === info.talla);
 
@@ -477,13 +539,14 @@ function agregarAlCarritoRapido(info) {
         if (carrito[indexExistente].cantidad < info.stock) {
             carrito[indexExistente].cantidad += 1;
         } else {
-            alert(`No hay más stock disponible para la talla ${info.talla}.`);
+            if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`Sin más stock disponible (talla ${info.talla})`, 'warning');
             return;
         }
     } else {
         carrito.push({
             productoId: info.id,
             nombre: info.nombre,
+            precioUnitario: info.precio,
             precio: info.precio,
             talla: info.talla,
             cantidad: 1,
@@ -492,10 +555,10 @@ function agregarAlCarritoRapido(info) {
         });
     }
 
-    localStorage.setItem('carritoSteps', JSON.stringify(carrito));
-    if (typeof actualizarContadorCarrito === 'function') actualizarContadorCarrito();
-    if (typeof renderizarCarritoModal === 'function') renderizarCarritoModal();
-    if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`"${info.nombre}" añadido al carrito`, 'success');
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    actualizarModalCarritoMini();
+    if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`"${info.nombre}" añadido al carrito 🛒`, 'success');
 }
 window.agregarAlCarritoRapido = agregarAlCarritoRapido;
 
@@ -503,50 +566,27 @@ window.verDetalle = function(id) {
     window.location.href = `detalle.html?id=${id}`;
 };
 
-window.agregarAlCarrito = async function(nombre, precio, id) {
-    try {
-        const respuesta = await fetch('/api/auth/me', {
-            method: 'GET',
-            credentials: 'include'
+window.agregarAlCarrito = function(nombre, precio, id) {
+    let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
+
+    const indexExistente = carrito.findIndex(item => item.productoId === id);
+    if (indexExistente >= 0) {
+        carrito[indexExistente].cantidad += 1;
+    } else {
+        carrito.push({
+            productoId: id,
+            nombre: nombre,
+            precioUnitario: precio,
+            precio: precio,
+            cantidad: 1
         });
+    }
 
-        if (!respuesta.ok) {
-            alert('⚠️ ¡Acceso denegado! Debes iniciar sesión como cliente o administrador para añadir productos al carrito.');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const usuario = await respuesta.json();
-
-        if (!usuario || (!usuario.email && !usuario.username)) {
-            alert('⚠️ ¡Debes iniciar sesión para poder comprar y añadir productos al carrito!');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-
-        const indexExistente = carrito.findIndex(item => item.productoId === id);
-        if (indexExistente >= 0) {
-            carrito[indexExistente].cantidad += 1;
-        } else {
-            carrito.push({
-                productoId: id,
-                nombre: nombre,
-                precioUnitario: precio,
-                cantidad: 1
-            });
-        }
-
-        localStorage.setItem('carrito', JSON.stringify(carrito));
-        actualizarContador();
-        actualizarCarritoModal();
-        alert(`¡"${nombre}" añadido al carrito!`);
-
-    } catch (error) {
-        console.error('Error al validar sesión:', error);
-        alert('⚠️ ¡Debes iniciar sesión para añadir productos al carrito!');
-        window.location.href = 'login.html';
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    actualizarModalCarritoMini();
+    if (typeof mostrarToastGlobal === 'function') {
+        mostrarToastGlobal(`¡"${nombre}" añadido al carrito! 🛒`, 'success');
     }
 };
 
@@ -558,60 +598,36 @@ window.agregarConTalla = function(nombre, precio, id) {
 };
 
 function actualizarContador() {
-    let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-    const contador = document.querySelector('#contador-carrito');
-    if (contador) contador.textContent = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+    actualizarContadorCarrito();
 }
 
 window.quitarDelCarrito = function(index) {
-    let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-    carrito.splice(index, 1);
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-    actualizarContador();
-    actualizarCarritoModal();
+    quitarDelCarritoMini(index);
 };
 
 function actualizarCarritoModal() {
-    let carrito = JSON.parse(localStorage.getItem('carrito')) ?? [];
-    const cuerpo = document.getElementById('cuerpo-carrito-tienda');
-    const totalSpan = document.getElementById('carrito-total-tienda');
-
-    if (!cuerpo) return;
-    cuerpo.innerHTML = '';
-
-    if (carrito.length === 0) {
-        cuerpo.innerHTML = `<p class="text-muted text-center py-2">El carrito está vacío.</p>`;
-        if (totalSpan) totalSpan.innerText = '0';
-        return;
-    }
-
-    let total = 0;
-    carrito.forEach((p, index) => {
-        const subtotal = Number(p.precioUnitario) * p.cantidad;
-        total += subtotal;
-        cuerpo.innerHTML += `
-            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                <div>
-                    <h6 class="mb-0 fw-bold">${p.nombre}</h6>
-                    <small class="text-muted">${p.cantidad}x $${Number(p.precioUnitario).toLocaleString()} COP</small>
-                </div>
-                <button class="btn btn-outline-danger btn-sm" onclick="quitarDelCarrito(${index})"><i class="bi bi-trash"></i></button>
-            </div>
-        `;
-    });
-    if (totalSpan) totalSpan.innerText = total.toLocaleString();
+    actualizarModalCarritoMini();
 }
 
 async function finalizarCompra() {
-    const carrito = JSON.parse(localStorage.getItem('carritoSteps')) || [];
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
     if (carrito.length === 0) {
         alert("El carrito está vacío.");
         return;
     }
 
-    const usuario = obtenerUsuarioSesion() || window.usuarioActual || {};
-    const totalCompra = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+    // Verificar si el usuario ha iniciado sesión antes de hacer el pedido
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual;
+    if (!usuario || (!usuario.email && !usuario.username)) {
+        if (confirm("Para realizar tu pedido debes iniciar sesión. ¿Deseas iniciar sesión ahora?")) {
+            window.location.href = 'login.html?redirect=checkout.html';
+        }
+        return;
+    }
+
+    window.location.href = 'checkout.html';
+}
 
     const nuevoPedido = {
         nombreCliente: usuario.nombre ?? usuario.username ?? 'Cliente Web',
@@ -987,16 +1003,21 @@ window.agregarAlCarritoRapidoById = function(id) {
     const producto = window.productosGlobal.find(p => p.id === id);
     if (!producto) return;
 
-    const talleDefault = (producto.talles && producto.talles.length > 0) ? producto.talles[0] : 'Única';
-    const precioConDescuento = producto.descuento ? producto.precio * (1 - producto.descuento / 100) : producto.precio;
+    // Usar tallasDisponibles (campo mapeado en cargarProductos), con fallback a 'Única'
+    const tallaDefault = (producto.tallasDisponibles && producto.tallasDisponibles.length > 0)
+        ? producto.tallasDisponibles[0]
+        : 'Única';
+    const precioConDescuento = producto.descuento > 0
+        ? Math.round(producto.precio * (1 - producto.descuento / 100))
+        : producto.precio;
 
     agregarAlCarritoRapido({
         id: producto.id,
         nombre: producto.nombre,
-        precio: Math.round(precioConDescuento),
-        talla: talleDefault,
-        stock: producto.stock ?? producto.cantidad ?? 0,
-        imagen: producto.imagenUrl || producto.imagen || ''
+        precio: precioConDescuento,
+        talla: tallaDefault,
+        stock: producto.stock ?? 0,
+        imagen: producto.imagen || producto.imagenUrl || ''
     });
 };
 async function verificarSesion() {
@@ -1034,24 +1055,66 @@ async function verificarSesion() {
 }
 
 function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
-    // 1. Ocultar botón de Iniciar Sesión y mostrar datos del usuario
+    // 1. Reemplazar el botón de Iniciar Sesión por el dropdown del usuario
     const btnLogin = document.getElementById('btnLoginNavbar');
     if (btnLogin) {
+        const nombreMostrar = usuario.nombre || usuario.email || 'Mi Cuenta';
+        const inicial = nombreMostrar.charAt(0).toUpperCase();
+
         btnLogin.outerHTML = `
-            <div class="dropdown">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle me-1"></i> ${usuario.nombre || usuario.email}
+            <div class="dropdown" id="dropdownUsuarioNav">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle"
+                        style="width:26px;height:26px;font-size:12px;background:linear-gradient(135deg,#FF5722,#dc2626);">
+                        ${inicial}
+                    </span>
+                    <span class="fw-semibold">${nombreMostrar.split(' ')[0]}</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow">
-                    <li><span class="dropdown-item-text text-muted small">Rol: <strong>${usuario.rol}</strong></span></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="cerrarSesion(event)"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;min-width:200px;">
+                    <li class="px-3 pt-2 pb-1">
+                        <div class="fw-bold" style="font-size:14px;">${nombreMostrar}</div>
+                        <div class="text-muted" style="font-size:12px;">${usuario.email || ''}</div>
+                    </li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="perfil.html">
+                            <i class="bi bi-person-circle text-dark"></i>
+                            <span>Mi Perfil</span>
+                        </a>
+                    </li>
+                    ${(esAdmin || esOperario) ? `
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="pedidos.html">
+                            <i class="bi bi-gear text-secondary"></i>
+                            <span>Panel Admin</span>
+                        </a>
+                    </li>` : `
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="pedidos.html">
+                            <i class="bi bi-bag-check text-secondary"></i>
+                            <span>Mis Pedidos</span>
+                        </a>
+                    </li>`}
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold" href="#" onclick="cerrarSesion(event)">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Cerrar Sesión</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         `;
     }
 
-    // 2. Mostrar Panel de Administración / Gestión si es Admin u Operario
+    // 2. Ocultar botones de Mi Perfil y Cerrar Sesión separados (ya incluidos en el dropdown)
+    const btnMiPerfil = document.getElementById('btnMiPerfil');
+    if (btnMiPerfil) btnMiPerfil.style.display = 'none';
+
+    const btnCerrarSesion = document.getElementById('btnCerrarSesionNav');
+    if (btnCerrarSesion) btnCerrarSesion.style.display = 'none';
+
+    // 3. Mostrar Panel de Administración si es Admin u Operario
     const btnPanelAdmin = document.getElementById('btnPanelAdmin');
     if (btnPanelAdmin) {
         btnPanelAdmin.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
@@ -1062,7 +1125,7 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
         btnAgregarProducto.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
     }
 
-    // Recargar el catálogo para renderizar los botones de eliminar si aplica
+    // 4. Recargar catálogo si aplica (para mostrar botones de eliminar admin)
     if (typeof cargarProductosTienda === 'function') {
         cargarProductosTienda();
     }
