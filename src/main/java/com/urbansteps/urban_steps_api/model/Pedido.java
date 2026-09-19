@@ -49,6 +49,14 @@ public class Pedido {
     @Column(length = 30)
     private String estado;
 
+    @Size(max = 80, message = "La transportadora no debe exceder 80 caracteres")
+    @Column(length = 80)
+    private String transportadora;
+
+    @Size(max = 80, message = "El número de guía no debe exceder 80 caracteres")
+    @Column(length = 80)
+    private String numeroGuia;
+
     @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fechaCreacion;
 
@@ -88,6 +96,12 @@ public class Pedido {
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+
+    public String getTransportadora() { return transportadora; }
+    public void setTransportadora(String transportadora) { this.transportadora = transportadora; }
+
+    public String getNumeroGuia() { return numeroGuia; }
+    public void setNumeroGuia(String numeroGuia) { this.numeroGuia = numeroGuia; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }

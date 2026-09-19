@@ -170,41 +170,13 @@ window.verificarAccesoAdmin = function(event) {
     }
 };
 
-// Función para guardar un nuevo producto desde el formulario Admin
-async function guardarNuevoProducto(evento) {
-    if (evento) evento.preventDefault();
-
-    const form = document.getElementById('form-producto');
-    if (!form) return;
-
-    const nuevoProducto = {
-        nombre: document.getElementById('prod-nombre')?.value,
-        precio: parseFloat(document.getElementById('prod-precio')?.value ?? 0),
-        descripcion: document.getElementById('prod-descripcion')?.value,
-        imagen: document.getElementById('prod-imagen')?.value || document.getElementById('prod-imagenUrl')?.value
-    };
-
-    try {
-        await realizarPeticionSegura('/api/productos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(nuevoProducto)
-        });
-
-        alert('Producto guardado correctamente.');
-        form.reset();
-        cargarProductos();
-    } catch (error) {
-        console.error('Error en guardarNuevoProducto:', error.message);
-        alert(`No se pudo guardar el producto: ${error.message}`);
-    }
-}
-window.guardarNuevoProducto = guardarNuevoProducto;
-
 // ==========================================
 // FILTROS Y ORDENAMIENTO DE PRODUCTOS
 // ==========================================
+function normalizarTexto(txt) {
+    return (txt || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+}
+
 window.filtrarCategoria = function(categoria, boton) {
     categoriaActualFiltro = categoria;
 
@@ -221,24 +193,27 @@ window.filtrarCategoria = function(categoria, boton) {
 function aplicarFiltrosProductos() {
     let listaFiltrada = window.productosGlobal ?? [];
 
-    const filtroUpper = (categoriaActualFiltro ?? '').toUpperCase().trim();
+    const filtroNorm = normalizarTexto(categoriaActualFiltro);
 
-    if (filtroUpper !== 'TODOS' && filtroUpper !== 'TODAS' && filtroUpper !== '') {
+    if (filtroNorm !== 'TODOS' && filtroNorm !== 'TODAS' && filtroNorm !== '') {
         listaFiltrada = listaFiltrada.filter(p => {
-            const catProducto = (p.categoria ?? '').toUpperCase().trim();
+            const catProducto = normalizarTexto(p.categoria);
             const catProductoSinS = catProducto.replace(/S$/, '');
-            const filtroSinS = filtroUpper.replace(/S$/, '');
+            const filtroSinS = filtroNorm.replace(/S$/, '');
 
-            return catProductoSinS === filtroSinS || catProducto.includes(filtroSinS);
+            return catProductoSinS === filtroSinS ||
+                   catProducto.includes(filtroSinS) ||
+                   catProducto.includes(filtroNorm) ||
+                   filtroNorm.includes(catProductoSinS);
         });
     }
 
     const inputBuscar = document.getElementById('input-buscar-tienda');
     if (inputBuscar && inputBuscar.value.trim() !== '') {
-        const texto = inputBuscar.value.toLowerCase();
+        const texto = normalizarTexto(inputBuscar.value);
         listaFiltrada = listaFiltrada.filter(p =>
-            (p.nombre?.toLowerCase().includes(texto) ?? false) ||
-            (p.descripcion?.toLowerCase().includes(texto) ?? false)
+            normalizarTexto(p.nombre).includes(texto) ||
+            normalizarTexto(p.descripcion).includes(texto)
         );
     }
 

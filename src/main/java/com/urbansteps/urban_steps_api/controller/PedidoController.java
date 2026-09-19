@@ -144,4 +144,56 @@ public class PedidoController {
         respuesta.put("pedidoId", pedido.getId());
         return ResponseEntity.ok(respuesta);
     }
+
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<?> actualizarEstado(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Pedido pedido = pedidoRepository.findById(id).orElse(null);
+        if (pedido == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String nuevoEstado = body.get("estado");
+        if (nuevoEstado != null && !nuevoEstado.isBlank()) {
+            pedido.setEstado(nuevoEstado.toUpperCase().trim());
+        }
+
+        if (body.containsKey("transportadora")) {
+            pedido.setTransportadora(body.get("transportadora"));
+        }
+        if (body.containsKey("numeroGuia")) {
+            pedido.setNumeroGuia(body.get("numeroGuia"));
+        }
+
+        pedidoRepository.save(pedido);
+
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("ok", true);
+        respuesta.put("message", "Estado del pedido actualizado a " + pedido.getEstado());
+        respuesta.put("pedido", pedido);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    @PutMapping("/{id}/despacho")
+    public ResponseEntity<?> actualizarDespacho(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Pedido pedido = pedidoRepository.findById(id).orElse(null);
+        if (pedido == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String transportadora = body.get("transportadora");
+        String numeroGuia = body.get("numeroGuia");
+        String estado = body.getOrDefault("estado", "EN_CAMINO");
+
+        if (transportadora != null) pedido.setTransportadora(transportadora);
+        if (numeroGuia != null) pedido.setNumeroGuia(numeroGuia);
+        pedido.setEstado(estado);
+
+        pedidoRepository.save(pedido);
+
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("ok", true);
+        respuesta.put("message", "Información de envío y rastreo actualizada");
+        respuesta.put("pedido", pedido);
+        return ResponseEntity.ok(respuesta);
+    }
 }

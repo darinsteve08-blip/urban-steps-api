@@ -130,6 +130,10 @@
             <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Urbana', this)">🏙️ Urbanas</button>
             <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Deportiva', this)">⚽ Deportivas</button>
             <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Casual', this)">👟 Casuales</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Botas', this)">🥾 Botas & Botines</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Skate', this)">🛹 Skate & Streetwear</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Running', this)">🏃 Running</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Edicion Especial', this)">👑 Edición Especial</button>
         </div>
 
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="grid-productos-tienda">
@@ -156,6 +160,10 @@
                                 <option value="Urbana">Urbana</option>
                                 <option value="Casual">Casual</option>
                                 <option value="Deportiva">Deportiva</option>
+                                <option value="Botas">Botas & Botines</option>
+                                <option value="Skate">Skate & Streetwear</option>
+                                <option value="Running">Running & Training</option>
+                                <option value="Edicion Especial">Edición Especial / Retro</option>
                             </select>
                         </div>
 
@@ -177,33 +185,69 @@
                             <small class="text-muted">Separa varias URLs con comas para habilitar la galería de ángulos.</small>
                         </div>
 
-                        <!-- Selección Múltiple de Colores -->
+                        <!-- Selección Múltiple de Colores Ampliada -->
                         <div class="mb-3">
                             <label class="form-label fw-bold small">Selecciona los Colores Disponibles:</label>
-                            <div class="d-flex flex-wrap gap-3 p-2 border rounded bg-light">
-                                <div class="form-check">
+                            <div class="d-flex flex-wrap gap-2 p-3 border rounded bg-light" style="max-height: 200px; overflow-y: auto;">
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Negro" id="cNegro">
-                                    <label class="form-check-label" for="cNegro">Negro</label>
+                                    <label class="form-check-label small fw-semibold" for="cNegro">⬛ Negro</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Blanco" id="cBlanco">
-                                    <label class="form-check-label" for="cBlanco">Blanco</label>
+                                    <label class="form-check-label small fw-semibold" for="cBlanco">⬜ Blanco</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Gris" id="cGris">
-                                    <label class="form-check-label" for="cGris">Gris</label>
+                                    <label class="form-check-label small fw-semibold" for="cGris">🔘 Gris</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Rojo" id="cRojo">
-                                    <label class="form-check-label" for="cRojo">Rojo</label>
+                                    <label class="form-check-label small fw-semibold" for="cRojo">🔴 Rojo</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Azul" id="cAzul">
-                                    <label class="form-check-label" for="cAzul">Azul</label>
+                                    <label class="form-check-label small fw-semibold" for="cAzul">🔵 Azul</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Verde" id="cVerde">
+                                    <label class="form-check-label small fw-semibold" for="cVerde">🟢 Verde / Oliva</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Amarillo" id="cAmarillo">
+                                    <label class="form-check-label small fw-semibold" for="cAmarillo">🟡 Amarillo / Mostaza</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Beige" id="cBeige">
+                                    <label class="form-check-label small fw-semibold" for="cBeige">🌾 Beige / Crema</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Marrón" id="cMarron">
+                                    <label class="form-check-label small fw-semibold" for="cMarron">🟤 Marrón / Café</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Naranja" id="cNaranja">
+                                    <label class="form-check-label small fw-semibold" for="cNaranja">🟠 Naranja</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Morado" id="cMorado">
+                                    <label class="form-check-label small fw-semibold" for="cMorado">🟣 Morado / Púrpura</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Rosa" id="cRosa">
+                                    <label class="form-check-label small fw-semibold" for="cRosa">🌸 Rosa / Pastel</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Dorado" id="cDorado">
+                                    <label class="form-check-label small fw-semibold" for="cDorado">✨ Dorado / Metálico</label>
+                                </div>
+                                <div class="form-check me-2">
+                                    <input class="form-check-input check-color" type="checkbox" value="Plateado" id="cPlateado">
+                                    <label class="form-check-label small fw-semibold" for="cPlateado">🪙 Plateado</label>
+                                </div>
+                                <div class="form-check me-2">
                                     <input class="form-check-input check-color" type="checkbox" value="Multicolor" id="cMulti">
-                                    <label class="form-check-label" for="cMulti">Multicolor</label>
+                                    <label class="form-check-label small fw-semibold" for="cMulti">🌈 Multicolor</label>
                                 </div>
                             </div>
                         </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Urban Steps | Historial de Pedidos</title>
+    <title>Urban Steps | Mis Pedidos & Rastreo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
-        body { font-family: 'Poppins', sans-serif; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .stat-card { border: none; border-radius: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
         .chart-card { border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .table-container { border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
@@ -22,7 +22,93 @@
         .btn-filter.active { background: linear-gradient(135deg, #FF5722, #ff8a65); border-color: transparent; color: white; }
         .btn-filter { border-radius: 14px; padding: 6px 16px; font-weight: 500; }
         .toast-container-pd { position: fixed; top: 24px; right: 24px; z-index: 9999; }
-        .badge-estado { padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; }
+        .badge-estado { padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; }
+        
+        /* Estilos del Visual Stepper de Rastreo */
+        .stepper-container {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 28px 0 20px 0;
+        }
+        .stepper-line-bg {
+            position: absolute;
+            top: 22px;
+            left: 35px;
+            right: 35px;
+            height: 4px;
+            background: #e5e7eb;
+            z-index: 1;
+        }
+        .stepper-line-fill {
+            position: absolute;
+            top: 22px;
+            left: 35px;
+            height: 4px;
+            background: linear-gradient(90deg, #FF5722, #16a34a);
+            z-index: 2;
+            transition: width 0.4s ease;
+        }
+        .step-node {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+        }
+        .step-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #fff;
+            color: #9ca3af;
+            border: 3px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        .step-node.completed .step-circle {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: #fff;
+        }
+        .step-node.active .step-circle {
+            background: #FF5722;
+            border-color: #FF5722;
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(255, 87, 34, 0.25);
+        }
+        .step-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            max-width: 90px;
+            line-height: 1.2;
+        }
+        .step-node.active .step-title {
+            color: #FF5722;
+            font-weight: 700;
+        }
+        .step-node.completed .step-title {
+            color: #16a34a;
+        }
+
+        .guia-tag {
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -34,59 +120,68 @@
                 Urban<span style="color: #FF5722;">Steps</span>
             </a>
             <div class="d-flex align-items-center gap-2">
-                <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-store me-1"></i> Tienda</a>
-                <a href="perfil.html" class="btn btn-outline-light btn-sm"><i class="bi bi-person me-1"></i> Mi Perfil</a>
-                <a href="carrito.html" class="btn btn-outline-light btn-sm"><i class="bi bi-cart3 me-1"></i> Carrito</a>
+                <a href="index.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-store me-1"></i> Catálogo</a>
+                <a href="perfil.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-person me-1"></i> Mi Perfil</a>
+                <a href="carrito.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-cart3 me-1"></i> Carrito</a>
             </div>
         </div>
     </nav>
 
     <div class="container py-5">
+        <!-- Header Dinámico (Cliente vs Admin) -->
         <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
             <div>
-                <h2 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;"><i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Pedidos</h2>
-                <p class="text-muted mb-0">Historial y gestión de todos los pedidos del sistema</p>
+                <span id="badgeRolVista" class="badge rounded-pill bg-dark mb-2 px-3 py-1 fw-normal">Cargando...</span>
+                <h2 class="fw-bold mb-1" id="tituloPagina" style="font-family: 'Poppins', sans-serif;">
+                    <i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Mis Pedidos & Rastreo
+                </h2>
+                <p class="text-muted mb-0" id="subtituloPagina">Historial y estado de tus compras en tiempo real</p>
             </div>
-            <button class="btn btn-danger fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarPDF()">
+            <button id="btnExportarPDF" class="btn btn-danger fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarPDF()">
                 <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
             </button>
         </div>
 
+        <!-- Tarjetas de Métricas -->
         <div class="row mb-4 g-3">
             <div class="col-md-4">
                 <div class="card stat-card p-4">
-                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Total Pedidos</h6>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase" id="label-stat-1">Total Pedidos</h6>
                     <h3 class="fw-bold mb-0" id="stat-total">0</h3>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card stat-card p-4">
-                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Ventas Acumuladas</h6>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase" id="label-stat-2">Ventas Acumuladas</h6>
                     <h3 class="fw-bold mb-0 text-success" id="stat-ventas">$0</h3>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card stat-card p-4">
-                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Ticket Promedio</h6>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase" id="label-stat-3">Ticket Promedio</h6>
                     <h3 class="fw-bold mb-0" style="color:#FF5722;" id="stat-promedio">$0</h3>
                 </div>
             </div>
         </div>
 
-        <div class="card chart-card p-4 mb-4">
+        <!-- Gráfico de Pedidos (Solo visible para Admin) -->
+        <div class="card chart-card p-4 mb-4" id="contenedorGrafico">
             <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Distribución de Pedidos por Estado</h5>
-            <div style="max-height: 280px; position: relative;">
+            <div style="max-height: 260px; position: relative;">
                 <canvas id="graficoPedidos"></canvas>
             </div>
         </div>
 
+        <!-- Filtros y Búsqueda -->
         <div class="row mb-4 g-3 align-items-end">
             <div class="col-md-6">
                 <label class="form-label small text-muted fw-bold mb-2">Filtrar por Estado:</label>
                 <div class="d-flex gap-2 flex-wrap" id="botones-filtro">
                     <button class="btn btn-outline-dark btn-filter active" onclick="filtrarEstado('TODOS', this)">Todos</button>
-                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('PENDIENTE', this)">Pendientes</button>
-                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('COMPLETADO', this)">Completados</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('PENDIENTE', this)">Recibidos</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('EN_PREPARACION', this)">En Bodega</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('EN_CAMINO', this)">En Camino 🚚</button>
+                    <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('COMPLETADO', this)">Entregados</button>
                     <button class="btn btn-outline-dark btn-filter" onclick="filtrarEstado('CANCELADO', this)">Cancelados</button>
                 </div>
             </div>
@@ -107,25 +202,25 @@
         <div class="mb-4">
             <div class="position-relative">
                 <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
-                <input type="text" id="input-buscar" class="form-control ps-5" placeholder="Buscar por ID, correo o nombre del cliente..."
+                <input type="text" id="input-buscar" class="form-control ps-5" placeholder="Buscar por ID, guía, producto o ciudad..."
                     style="border-radius: 14px; border: 2px solid #e5e7eb; padding: 12px 16px 12px 44px; font-family: 'Poppins', sans-serif;"
                     oninput="filtrarPedidos()">
             </div>
         </div>
 
+        <!-- Tabla de Pedidos -->
         <div class="bg-white table-container">
             <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark" id="cabecera-tabla">
                         <tr>
                             <th>ID</th>
                             <th>Cliente</th>
-                            <th>Correo</th>
                             <th>Ciudad</th>
                             <th>Fecha</th>
                             <th>Total</th>
-                            <th>Método</th>
-                            <th>Estado</th>
+                            <th>Rastreo & Estado</th>
+                            <th>Despacho / Guía</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -139,20 +234,24 @@
         </nav>
 
         <div class="text-center mt-4">
-            <a href="index.html" class="btn btn-outline-dark rounded-pill px-4 fw-semibold"><i class="bi bi-arrow-left me-2"></i>Volver al inicio</a>
+            <a href="index.html" class="btn btn-outline-dark rounded-pill px-4 fw-semibold"><i class="bi bi-arrow-left me-2"></i>Volver a la Tienda</a>
         </div>
     </div>
 
+    <!-- Modal Detalle y Rastreo Completo -->
     <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-header text-white" style="background: linear-gradient(135deg, #111827, #1f2937); border-top-left-radius: 20px; border-top-right-radius: 20px;">
-                    <h5 class="modal-title fw-bold" id="modalTitulo">Detalles del Pedido</h5>
+            <div class="modal-content border-0 shadow" style="border-radius: 24px; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #111827, #1f2937);">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-box2-fill text-warning fs-5"></i>
+                        <h5 class="modal-title fw-bold" id="modalTitulo">Detalles del Pedido</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4" id="modalCuerpo"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -161,7 +260,7 @@
     <footer class="bg-dark text-white-50 py-5 mt-5">
         <div class="container text-center">
             <p class="mb-2 fw-bold fs-5 text-white" style="font-family: 'Poppins', sans-serif;">Urban<span style="color: #FF5722;">Steps</span></p>
-            <p class="small mb-0">© 2024 Urban Steps. Todos los derechos reservados.</p>
+            <p class="small mb-0">© 2026 Urban Steps. Pisa fuerte, define tu estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 
@@ -172,6 +271,8 @@
         let paginaActual = 1;
         let registrosPorPagina = 10;
         let miGrafico = null;
+        let esUsuarioAdmin = false;
+        let usuarioSesion = null;
 
         function fmt(v) { return '$' + Number(v || 0).toLocaleString('es-CO') + ' COP'; }
 
@@ -181,7 +282,7 @@
             const bg = tipo === 'success' ? 'linear-gradient(135deg, #16a34a, #22c55e)'
                       : tipo === 'error' ? 'linear-gradient(135deg, #dc2626, #ef4444)'
                       : 'linear-gradient(135deg, #2563eb, #3b82f6)';
-            const icono = tipo === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' : 'info-circle-fill';
+            const icono = tipo === 'success' ? 'check-circle-fill' : tipo === 'error' ? 'exclamation-triangle-fill' : 'info-circle-fill';
             const toast = document.createElement('div');
             toast.id = id;
             toast.style.cssText = `background:${bg};color:#fff;padding:14px 20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.2);margin-bottom:12px;display:flex;align-items:center;gap:12px;min-width:300px;font-family:'Poppins',sans-serif;font-weight:500;transform:translateX(120%);transition:transform 0.35s ease;`;
@@ -193,12 +294,15 @@
 
         function badgeEstado(e) {
             const map = {
-                'PENDIENTE':   { bg: 'linear-gradient(135deg, #d97706, #f59e0b)', txt: 'Pendiente',   icon: 'clock-fill' },
-                'COMPLETADO':  { bg: 'linear-gradient(135deg, #16a34a, #22c55e)', txt: 'Completado',  icon: 'check-circle-fill' },
-                'CANCELADO':   { bg: 'linear-gradient(135deg, #dc2626, #ef4444)', txt: 'Cancelado',   icon: 'x-circle-fill' }
+                'PENDIENTE':      { bg: 'linear-gradient(135deg, #d97706, #f59e0b)', txt: 'Recibido',        icon: 'receipt' },
+                'PAGADO':         { bg: 'linear-gradient(135deg, #0284c7, #38bdf8)', txt: 'Pago Confirmado', icon: 'credit-card-2-front-fill' },
+                'EN_PREPARACION': { bg: 'linear-gradient(135deg, #7c3aed, #a855f7)', txt: 'En Preparación',  icon: 'box-seam-fill' },
+                'EN_CAMINO':      { bg: 'linear-gradient(135deg, #ea580c, #f97316)', txt: 'En Camino',       icon: 'truck' },
+                'COMPLETADO':     { bg: 'linear-gradient(135deg, #16a34a, #22c55e)', txt: 'Entregado',       icon: 'check-circle-fill' },
+                'CANCELADO':      { bg: 'linear-gradient(135deg, #dc2626, #ef4444)', txt: 'Cancelado',       icon: 'x-circle-fill' }
             };
             const s = map[e] || { bg: '#6b7280', txt: e || 'N/D', icon: 'dash-circle' };
-            return `<span class="badge-estado text-white" style="background:${s.bg};"><i class="bi bi-${s.icon} me-1"></i>${s.txt}</span>`;
+            return `<span class="badge-estado text-white" style="background:${s.bg};"><i class="bi bi-${s.icon}"></i>${s.txt}</span>`;
         }
 
         function fmtFecha(f) {
@@ -210,26 +314,182 @@
             } catch(e) { return String(f).split('T')[0]; }
         }
 
-        async function cargarPedidos() {
-            try {
-                const resTodos = fetch('/api/pedidos', { credentials: 'include' });
-                const resMios  = fetch('/api/pedidos/mis-pedidos', { credentials: 'include' }).catch(() => null);
-                const [r1, r2] = await Promise.all([resTodos, resMios]);
+        function copiarGuia(guia) {
+            if (!guia) return;
+            navigator.clipboard.writeText(guia).then(() => {
+                mostrarToast(`Número de guía ${guia} copiado al portapapeles.`, 'info');
+            });
+        }
 
-                if (r1.ok) {
-                    todosLosPedidos = await r1.json();
-                } else if (r2 && r2.ok) {
-                    todosLosPedidos = await r2.json();
+        function generarStepperHtml(estado) {
+            const est = (estado || 'PENDIENTE').toUpperCase();
+            if (est === 'CANCELADO') {
+                return `
+                    <div class="alert alert-danger d-flex align-items-center gap-3 rounded-4 my-3">
+                        <i class="bi bi-x-circle-fill fs-2"></i>
+                        <div>
+                            <div class="fw-bold fs-6">Este pedido fue cancelado</div>
+                            <div class="small">El stock correspondiente fue reestablecido a nuestro inventario.</div>
+                        </div>
+                    </div>`;
+            }
+
+            const pasos = [
+                { id: 'PENDIENTE',      num: '1', nombre: 'Recibido',        icon: 'bi-receipt' },
+                { id: 'PAGADO',         num: '2', nombre: 'Pago Confirmado', icon: 'bi-credit-card-2-front' },
+                { id: 'EN_PREPARACION', num: '3', nombre: 'En Bodega',       icon: 'bi-box-seam' },
+                { id: 'EN_CAMINO',      num: '4', nombre: 'En Camino',       icon: 'bi-truck' },
+                { id: 'COMPLETADO',     num: '5', nombre: 'Entregado',       icon: 'bi-house-check' }
+            ];
+
+            const mapaNiveles = { 'PENDIENTE': 1, 'PAGADO': 2, 'EN_PREPARACION': 3, 'EN_CAMINO': 4, 'COMPLETADO': 5 };
+            const nivelActual = mapaNiveles[est] || 1;
+            const porcentaje = Math.min(100, Math.max(0, ((nivelActual - 1) / 4) * 100));
+
+            const pasosHtml = pasos.map((p, idx) => {
+                const pasoNivel = idx + 1;
+                let clase = '';
+                if (pasoNivel < nivelActual) clase = 'completed';
+                else if (pasoNivel === nivelActual) clase = 'active';
+
+                return `
+                    <div class="step-node ${clase}">
+                        <div class="step-circle"><i class="bi ${p.icon}"></i></div>
+                        <div class="step-title">${p.nombre}</div>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="bg-white p-4 rounded-4 border shadow-sm my-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-bold text-muted text-uppercase"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Progreso de Entrega</span>
+                        <span class="badge bg-light text-dark border px-3 py-1 fw-semibold">Paso ${nivelActual} de 5</span>
+                    </div>
+                    <div class="stepper-container">
+                        <div class="stepper-line-bg"></div>
+                        <div class="stepper-line-fill" style="width: calc(${porcentaje}% - 20px);"></div>
+                        ${pasosHtml}
+                    </div>
+                </div>`;
+        }
+
+        async function verificarIdentidad() {
+            try {
+                const res = await fetch('/api/auth/current', { credentials: 'include' });
+                if (res.ok) {
+                    usuarioSesion = await res.json();
                 } else {
-                    throw new Error('No autorizado');
+                    const local = localStorage.getItem('usuario');
+                    if (local) usuarioSesion = JSON.parse(local);
                 }
-                filtrarPedidos();
+            } catch (e) {
+                const local = localStorage.getItem('usuario');
+                if (local) usuarioSesion = JSON.parse(local);
+            }
+
+            if (!usuarioSesion) {
+                document.getElementById('tabla-pedidos').innerHTML =
+                    `<tr><td colspan="8" class="text-center py-5 text-danger">
+                        <i class="bi bi-lock-fill fs-2 d-block mb-2"></i>
+                        Debes iniciar sesión para consultar tus pedidos. <a href="login.html" class="fw-bold">Inicia Sesión aquí</a>
+                    </td></tr>`;
+                return false;
+            }
+
+            const rol = (usuarioSesion.rol || '').toUpperCase();
+            esUsuarioAdmin = rol === 'ADMIN' || rol === 'ROLE_ADMIN' || rol === 'OPERARIO' || rol === 'ROLE_OPERARIO';
+
+            configurarVistaPorRol();
+            return true;
+        }
+
+        function configurarVistaPorRol() {
+            const badge = document.getElementById('badgeRolVista');
+            const titulo = document.getElementById('tituloPagina');
+            const subtitulo = document.getElementById('subtituloPagina');
+            const grafico = document.getElementById('contenedorGrafico');
+            const btnPdf = document.getElementById('btnExportarPDF');
+
+            if (esUsuarioAdmin) {
+                badge.className = 'badge rounded-pill bg-danger mb-2 px-3 py-1 fw-semibold';
+                badge.innerHTML = '<i class="bi bi-shield-lock-fill me-1"></i> Modo Administrador';
+                titulo.innerHTML = '<i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Gestión Integral de Pedidos';
+                subtitulo.textContent = 'Panel operativo: seguimiento de envíos, comprobantes y actualización de guías';
+                if (grafico) grafico.style.display = 'block';
+                if (btnPdf) btnPdf.style.display = 'inline-block';
+
+                document.getElementById('label-stat-1').textContent = 'Total Pedidos Tienda';
+                document.getElementById('label-stat-2').textContent = 'Ventas Totales';
+                document.getElementById('label-stat-3').textContent = 'Ticket Promedio';
+
+                document.getElementById('cabecera-tabla').innerHTML = `
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Ciudad</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Despacho</th>
+                        <th>Acción</th>
+                    </tr>`;
+            } else {
+                badge.className = 'badge rounded-pill bg-success mb-2 px-3 py-1 fw-semibold';
+                badge.innerHTML = '<i class="bi bi-person-check-fill me-1"></i> Cuenta de Cliente';
+                titulo.innerHTML = '<i class="bi bi-box2-heart me-2" style="color:#FF5722;"></i>Mis Pedidos & Rastreo';
+                subtitulo.textContent = 'Rastrea tus zapatillas en tiempo real y revisa tus comprobantes';
+                if (grafico) grafico.style.display = 'none';
+                if (btnPdf) btnPdf.style.display = 'none';
+
+                document.getElementById('label-stat-1').textContent = 'Mis Pedidos';
+                document.getElementById('label-stat-2').textContent = 'Total Comprado';
+                document.getElementById('label-stat-3').textContent = 'En Camino / Activos';
+
+                document.getElementById('cabecera-tabla').innerHTML = `
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Fecha</th>
+                        <th>Dirección</th>
+                        <th>Total</th>
+                        <th>Estado Actual</th>
+                        <th>Transportadora & Guía</th>
+                        <th>Seguimiento</th>
+                    </tr>`;
+            }
+        }
+
+        async function cargarPedidos() {
+            const autenticado = await verificarIdentidad();
+            if (!autenticado) return;
+
+            try {
+                // Admin carga /api/pedidos, Cliente carga /api/pedidos/mis-pedidos
+                const url = esUsuarioAdmin ? '/api/pedidos' : '/api/pedidos/mis-pedidos';
+                const res = await fetch(url, { credentials: 'include' });
+
+                if (res.ok) {
+                    todosLosPedidos = await res.json();
+                    filtrarPedidos();
+                } else if (res.status === 403 || res.status === 401) {
+                    // Fallback a mis pedidos si no tiene permisos de admin
+                    const resMios = await fetch('/api/pedidos/mis-pedidos', { credentials: 'include' });
+                    if (resMios.ok) {
+                        esUsuarioAdmin = false;
+                        configurarVistaPorRol();
+                        todosLosPedidos = await resMios.json();
+                        filtrarPedidos();
+                    } else {
+                        throw new Error('No autorizado');
+                    }
+                } else {
+                    throw new Error('Error al consultar pedidos');
+                }
             } catch (error) {
                 console.error(error);
                 document.getElementById('tabla-pedidos').innerHTML =
-                    `<tr><td colspan="9" class="text-center py-5 text-danger">
+                    `<tr><td colspan="8" class="text-center py-5 text-danger">
                         <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
-                        Error al cargar o no tienes permisos. <a href="login.html" class="fw-bold text-decoration-none">Inicia sesión</a>
+                        Error al cargar pedidos. <a href="login.html" class="fw-bold text-decoration-none">Inicia sesión</a>
                     </td></tr>`;
             }
         }
@@ -239,12 +499,12 @@
             tbody.innerHTML = '';
 
             if (!lista || lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">
                     <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
                     No se encontraron pedidos.
                 </td></tr>`;
                 document.getElementById('paginacion-container').innerHTML = '';
-                actualizarGrafico([]);
+                if (esUsuarioAdmin) actualizarGrafico([]);
                 actualizarMetricas([]);
                 return;
             }
@@ -253,51 +513,98 @@
             const fin = inicio + registrosPorPagina;
             const listaPaginada = lista.slice(inicio, fin);
 
-            tbody.innerHTML = listaPaginada.map(p => `
-                <tr style="cursor: pointer;" onclick="verDetalles(${p.id})">
-                    <td class="fw-bold">#${p.id}</td>
-                    <td>${p.nombreCliente}</td>
-                    <td class="small">${p.emailCliente || 'No registrado'}</td>
-                    <td>${p.ciudad || 'N/D'}</td>
-                    <td class="small">${fmtFecha(p.fechaCreacion || p.fecha)}</td>
-                    <td class="fw-bold text-danger">${fmt(p.total)}</td>
-                    <td class="small">${p.metodoPago || 'N/D'}</td>
-                    <td>${badgeEstado(p.estado)}</td>
-                    <td onclick="event.stopPropagation()">
-                        ${p.estado === 'PENDIENTE' ? `
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-success btn-sm rounded-pill fw-medium" onclick="completarPedido(${p.id})"><i class="bi bi-check-lg"></i></button>
-                                <button class="btn btn-danger btn-sm rounded-pill fw-medium" onclick="cancelarPedido(${p.id})"><i class="bi bi-x-lg"></i></button>
-                            </div>
-                        ` : '<span class="text-muted small">—</span>'}
-                    </td>
-                </tr>
-            `).join('');
+            if (esUsuarioAdmin) {
+                tbody.innerHTML = listaPaginada.map(p => {
+                    const tieneGuia = p.transportadora || p.numeroGuia;
+                    const guiaHtml = tieneGuia
+                        ? `<div class="d-flex flex-column gap-1">
+                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1"></i>${p.transportadora || 'Envío'}</span>
+                               ${p.numeroGuia ? `<span class="guia-tag" onclick="copiarGuia('${p.numeroGuia}')" title="Clic para copiar"><i class="bi bi-clipboard me-1"></i>${p.numeroGuia}</span>` : ''}
+                           </div>`
+                        : `<span class="text-muted small fst-italic">Sin asignar</span>`;
+
+                    return `
+                        <tr style="cursor: pointer;" onclick="verDetalles(${p.id})">
+                            <td class="fw-bold">#${p.id}</td>
+                            <td>
+                                <div class="fw-semibold">${p.nombreCliente || 'Cliente'}</div>
+                                <div class="small text-muted">${p.emailCliente || ''}</div>
+                            </td>
+                            <td>${p.ciudad || 'N/D'}</td>
+                            <td class="small">${fmtFecha(p.fechaCreacion || p.fecha)}</td>
+                            <td class="fw-bold text-danger">${fmt(p.total)}</td>
+                            <td>${badgeEstado(p.estado)}</td>
+                            <td>${guiaHtml}</td>
+                            <td onclick="event.stopPropagation()">
+                                <button class="btn btn-dark btn-sm rounded-pill px-3 fw-semibold" onclick="verDetalles(${p.id})">
+                                    <i class="bi bi-eye me-1"></i> Gestionar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = listaPaginada.map(p => {
+                    const tieneGuia = p.transportadora || p.numeroGuia;
+                    const guiaHtml = tieneGuia
+                        ? `<div class="d-flex flex-column gap-1">
+                               <span class="small fw-semibold text-dark"><i class="bi bi-truck me-1"></i>${p.transportadora || 'En coordinación'}</span>
+                               ${p.numeroGuia ? `<span class="guia-tag" onclick="copiarGuia('${p.numeroGuia}')" title="Clic para copiar"><i class="bi bi-clipboard me-1"></i>${p.numeroGuia}</span>` : ''}
+                           </div>`
+                        : `<span class="badge bg-light text-secondary border">Asignando guía...</span>`;
+
+                    return `
+                        <tr style="cursor: pointer;" onclick="verDetalles(${p.id})">
+                            <td class="fw-bold">#${p.id}</td>
+                            <td class="small">${fmtFecha(p.fechaCreacion || p.fecha)}</td>
+                            <td>
+                                <div class="small fw-semibold">${p.ciudad || 'N/D'}</div>
+                                <div class="small text-muted" style="max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${p.direccion || ''}</div>
+                            </td>
+                            <td class="fw-bold text-danger">${fmt(p.total)}</td>
+                            <td>${badgeEstado(p.estado)}</td>
+                            <td>${guiaHtml}</td>
+                            <td onclick="event.stopPropagation()">
+                                <button class="btn btn-outline-dark btn-sm rounded-pill px-3 fw-semibold" onclick="verDetalles(${p.id})">
+                                    <i class="bi bi-geo-alt me-1"></i> Ver Rastreo
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
 
             renderizarBotonesPaginacion(lista.length);
-            actualizarGrafico(lista);
+            if (esUsuarioAdmin) actualizarGrafico(lista);
             actualizarMetricas(lista);
         }
 
         function actualizarGrafico(lista) {
+            const ctxEl = document.getElementById('graficoPedidos');
+            if (!ctxEl) return;
             const p = lista.filter(x => x.estado === 'PENDIENTE').length;
-            const c = lista.filter(x => x.estado === 'COMPLETADO').length;
+            const b = lista.filter(x => x.estado === 'EN_PREPARACION').length;
+            const c = lista.filter(x => x.estado === 'EN_CAMINO').length;
+            const ok = lista.filter(x => x.estado === 'COMPLETADO').length;
             const k = lista.filter(x => x.estado === 'CANCELADO').length;
-            const ctx = document.getElementById('graficoPedidos').getContext('2d');
+
+            const ctx = ctxEl.getContext('2d');
             if (miGrafico) miGrafico.destroy();
             miGrafico = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Pendientes', 'Completados', 'Cancelados'],
+                    labels: ['Recibidos', 'En Bodega', 'En Camino', 'Entregados', 'Cancelados'],
                     datasets: [{
-                        label: 'Cantidad de Pedidos',
-                        data: [p, c, k],
+                        label: 'Cantidad',
+                        data: [p, b, c, ok, k],
                         backgroundColor: [
                             'rgba(245, 158, 11, 0.85)',
+                            'rgba(168, 85, 247, 0.85)',
+                            'rgba(249, 115, 22, 0.85)',
                             'rgba(34, 197, 94, 0.85)',
                             'rgba(239, 68, 68, 0.85)'
                         ],
-                        borderColor: ['#d97706', '#16a34a', '#dc2626'],
+                        borderColor: ['#d97706', '#7c3aed', '#ea580c', '#16a34a', '#dc2626'],
                         borderWidth: 2,
                         borderRadius: 10
                     }]
@@ -338,15 +645,24 @@
         }
 
         function actualizarMetricas(lista) {
-            document.getElementById('stat-total').innerText = lista.length;
-            const noCancelados = lista.filter(p => p.estado !== 'CANCELADO');
-            const totalVentas = noCancelados.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
-            document.getElementById('stat-ventas').innerText = fmt(totalVentas);
-            const promedio = noCancelados.length > 0 ? totalVentas / noCancelados.length : 0;
-            document.getElementById('stat-promedio').innerText = fmt(promedio);
+            if (esUsuarioAdmin) {
+                document.getElementById('stat-total').innerText = lista.length;
+                const noCancelados = lista.filter(p => p.estado !== 'CANCELADO');
+                const totalVentas = noCancelados.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+                document.getElementById('stat-ventas').innerText = fmt(totalVentas);
+                const promedio = noCancelados.length > 0 ? totalVentas / noCancelados.length : 0;
+                document.getElementById('stat-promedio').innerText = fmt(promedio);
+            } else {
+                document.getElementById('stat-total').innerText = lista.length;
+                const noCancelados = lista.filter(p => p.estado !== 'CANCELADO');
+                const totalComprado = noCancelados.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+                document.getElementById('stat-ventas').innerText = fmt(totalComprado);
+                const activos = lista.filter(p => ['PENDIENTE', 'PAGADO', 'EN_PREPARACION', 'EN_CAMINO'].includes(p.estado)).length;
+                document.getElementById('stat-promedio').innerText = activos;
+            }
         }
 
-        window.exportarPDF = function() {
+        function exportarPDF() {
             if (!todosLosPedidos || todosLosPedidos.length === 0) {
                 mostrarToast('No hay pedidos para exportar.', 'error');
                 return;
@@ -370,16 +686,16 @@
             doc.setLineWidth(0.6);
             doc.line(14, 32, 196, 32);
 
-            const columnas = ["ID", "Cliente", "Correo", "Ciudad", "Fecha", "Total", "Método", "Estado"];
+            const columnas = ["ID", "Cliente", "Ciudad", "Fecha", "Total", "Estado", "Transportadora", "Guía"];
             const filas = todosLosPedidos.map(p => [
                 `#${p.id}`,
                 p.nombreCliente || '',
-                p.emailCliente || 'N/R',
                 p.ciudad || '',
                 fmtFecha(p.fechaCreacion || p.fecha),
                 `$${Number(p.total || 0).toLocaleString()}`,
-                p.metodoPago || '',
-                p.estado || ''
+                p.estado || '',
+                p.transportadora || 'N/A',
+                p.numeroGuia || 'N/A'
             ]);
 
             doc.autoTable({
@@ -387,10 +703,10 @@
                 headStyles: { fillColor: colorAcento, textColor: [255,255,255], fontStyle: 'bold', halign: 'center' },
                 bodyStyles: { textColor: [40,40,40], fontSize: 8 },
                 alternateRowStyles: { fillColor: [249, 250, 251] },
-                columnStyles: { 0: { halign: 'center' }, 5: { halign: 'right' }, 7: { halign: 'center' } }
+                columnStyles: { 0: { halign: 'center' }, 4: { halign: 'right' }, 5: { halign: 'center' } }
             });
             doc.save(`Pedidos_UrbanSteps_${ahora.toISOString().slice(0,10)}.pdf`);
-            mostrarToast('PDF descargado correctamente.', 'success');
+            mostrarToast('Reporte PDF descargado exitosamente.', 'success');
         }
 
         function filtrarEstado(estado, boton) {
@@ -402,26 +718,35 @@
 
         function filtrarPedidos() {
             paginaActual = 1;
-            const texto = (document.getElementById('input-buscar').value || '').toLowerCase();
+            const texto = (document.getElementById('input-buscar').value || '').toLowerCase().trim();
             const fechaInicio = document.getElementById('fecha-inicio').value;
             const fechaFin = document.getElementById('fecha-fin').value;
 
             let lista = todosLosPedidos || [];
-            if (estadoActualFiltro !== 'TODOS') lista = lista.filter(p => p.estado === estadoActualFiltro);
+            if (estadoActualFiltro !== 'TODOS') {
+                lista = lista.filter(p => p.estado === estadoActualFiltro);
+            }
 
-            if (fechaInicio) lista = lista.filter(p => {
-                const f = p.fechaCreacion || p.fecha; if (!f) return false;
-                return String(f).split('T')[0] >= fechaInicio;
-            });
-            if (fechaFin) lista = lista.filter(p => {
-                const f = p.fechaCreacion || p.fecha; if (!f) return false;
-                return String(f).split('T')[0] <= fechaFin;
-            });
+            if (fechaInicio) {
+                lista = lista.filter(p => {
+                    const f = p.fechaCreacion || p.fecha; if (!f) return false;
+                    return String(f).split('T')[0] >= fechaInicio;
+                });
+            }
+            if (fechaFin) {
+                lista = lista.filter(p => {
+                    const f = p.fechaCreacion || p.fecha; if (!f) return false;
+                    return String(f).split('T')[0] <= fechaFin;
+                });
+            }
             if (texto) {
                 lista = lista.filter(p =>
                     String(p.id).includes(texto) ||
                     (p.nombreCliente || '').toLowerCase().includes(texto) ||
-                    (p.emailCliente || '').toLowerCase().includes(texto)
+                    (p.emailCliente || '').toLowerCase().includes(texto) ||
+                    (p.ciudad || '').toLowerCase().includes(texto) ||
+                    (p.transportadora || '').toLowerCase().includes(texto) ||
+                    (p.numeroGuia || '').toLowerCase().includes(texto)
                 );
             }
             renderizarTabla(lista);
@@ -430,12 +755,13 @@
         function verDetalles(id) {
             const pedido = todosLosPedidos.find(p => p.id === id);
             if (!pedido) return;
+
             const productosHtml = (pedido.productos && pedido.productos.length)
                 ? pedido.productos.map(dp => `
                     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-                        <img src="${dp.imagenProducto || dp.imagen || ''}"
+                        <img src="${dp.imagenProducto || dp.imagen || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80'}"
                              onerror="this.style.display='none'"
-                             style="width:52px; height:52px; object-fit:cover; border-radius:10px;">
+                             style="width:56px; height:56px; object-fit:cover; border-radius:12px;">
                         <div class="flex-grow-1">
                             <div class="fw-semibold">${dp.nombreProducto || `Producto #${dp.productoId}`}</div>
                             <div class="small text-muted">
@@ -443,15 +769,76 @@
                             </div>
                         </div>
                     </div>`).join('')
-                : `<div class="text-muted small py-3"><em>Detalle no disponible para este pedido.</em></div>`;
+                : `<div class="text-muted small py-3"><em>Detalle de productos no disponible.</em></div>`;
 
-            document.getElementById('modalTitulo').innerText = `Pedido #${pedido.id}`;
+            const despachoInfoHtml = (pedido.transportadora || pedido.numeroGuia)
+                ? `
+                    <div class="alert alert-primary d-flex align-items-center justify-content-between p-3 rounded-4 mt-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-truck fs-2 text-primary"></i>
+                            <div>
+                                <div class="fw-bold">${pedido.transportadora || 'Transportadora Nacional'}</div>
+                                <div class="small text-muted">Número de Guía: <span class="badge bg-dark fs-6">${pedido.numeroGuia || 'En trámite'}</span></div>
+                            </div>
+                        </div>
+                        ${pedido.numeroGuia ? `<button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="copiarGuia('${pedido.numeroGuia}')"><i class="bi bi-clipboard me-1"></i>Copiar Guía</button>` : ''}
+                    </div>`
+                : (pedido.estado === 'CANCELADO' ? '' : `<div class="alert alert-light border d-flex align-items-center gap-2 p-3 rounded-4 mt-2 text-muted small"><i class="bi bi-info-circle fs-5"></i> La guía de rastreo y empresa de mensajería se asignarán una vez empacado tu pedido.</div>`);
+
+            // Sección de Administración (solo visible para admin)
+            const adminToolsHtml = esUsuarioAdmin ? `
+                <div class="card border-0 bg-light p-4 rounded-4 mt-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-sliders me-2 text-danger"></i>Actualizar Estado & Despacho (Control Admin)</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="small fw-bold text-muted mb-1">Estado del Pedido:</label>
+                            <select id="adminNuevoEstado" class="form-select form-select-sm rounded-pill">
+                                <option value="PENDIENTE" ${pedido.estado === 'PENDIENTE' ? 'selected' : ''}>📝 Recibido (Pendiente)</option>
+                                <option value="PAGADO" ${pedido.estado === 'PAGADO' ? 'selected' : ''}>💳 Pago Verificado</option>
+                                <option value="EN_PREPARACION" ${pedido.estado === 'EN_PREPARACION' ? 'selected' : ''}>📦 En Bodega (Preparación)</option>
+                                <option value="EN_CAMINO" ${pedido.estado === 'EN_CAMINO' ? 'selected' : ''}>🚚 En Camino (Despachado)</option>
+                                <option value="COMPLETADO" ${pedido.estado === 'COMPLETADO' ? 'selected' : ''}>🏠 Entregado (Completado)</option>
+                                <option value="CANCELADO" ${pedido.estado === 'CANCELADO' ? 'selected' : ''}>❌ Cancelar Pedido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small fw-bold text-muted mb-1">Transportadora:</label>
+                            <select id="adminTransportadora" class="form-select form-select-sm rounded-pill">
+                                <option value="">Seleccionar empresa...</option>
+                                <option value="Servientrega" ${pedido.transportadora === 'Servientrega' ? 'selected' : ''}>Servientrega</option>
+                                <option value="Inter Rapidísimo" ${pedido.transportadora === 'Inter Rapidísimo' ? 'selected' : ''}>Inter Rapidísimo</option>
+                                <option value="Coordinadora" ${pedido.transportadora === 'Coordinadora' ? 'selected' : ''}>Coordinadora</option>
+                                <option value="Envía" ${pedido.transportadora === 'Envía' ? 'selected' : ''}>Envía</option>
+                                <option value="TCC" ${pedido.transportadora === 'TCC' ? 'selected' : ''}>TCC</option>
+                                <option value="Mensajería Local" ${pedido.transportadora === 'Mensajería Local' ? 'selected' : ''}>Mensajería Local</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small fw-bold text-muted mb-1">Número de Guía:</label>
+                            <input type="text" id="adminNumeroGuia" class="form-control form-control-sm rounded-pill" placeholder="Ej: 2198304910" value="${pedido.numeroGuia || ''}">
+                        </div>
+                        <div class="col-12 text-end mt-3">
+                            <button class="btn btn-dark btn-sm rounded-pill px-4 fw-semibold" onclick="guardarDespachoAdmin(${pedido.id})">
+                                <i class="bi bi-save me-1"></i> Guardar Cambios de Despacho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ` : '';
+
+            document.getElementById('modalTitulo').innerText = `Pedido #${pedido.id} · Rastreo & Detalle`;
             document.getElementById('modalCuerpo').innerHTML = `
-                <div class="row g-3 mb-4">
+                <!-- Stepper Visual -->
+                ${generarStepperHtml(pedido.estado)}
+
+                <!-- Info de Despacho / Transportadora -->
+                ${despachoInfoHtml}
+
+                <div class="row g-3 my-2">
                     <div class="col-12 col-md-6">
-                        <div class="bg-light rounded-3 p-3">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-person-badge me-2" style="color:#FF5722;"></i>Información del Cliente</h6>
-                            <p class="mb-1 small"><strong>Nombre:</strong> ${pedido.nombreCliente}</p>
+                        <div class="bg-light rounded-4 p-3 h-100">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2" style="color:#FF5722;"></i>Destino de Entrega</h6>
+                            <p class="mb-1 small"><strong>Destinatario:</strong> ${pedido.nombreCliente}</p>
                             <p class="mb-1 small"><strong>Email:</strong> ${pedido.emailCliente || 'N/D'}</p>
                             <p class="mb-1 small"><strong>Teléfono:</strong> ${pedido.telefono || 'N/D'}</p>
                             <p class="mb-1 small"><strong>Ciudad:</strong> ${pedido.ciudad || 'N/D'}</p>
@@ -459,61 +846,70 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div class="bg-light rounded-3 p-3">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2" style="color:#FF5722;"></i>Resumen del Pedido</h6>
+                        <div class="bg-light rounded-4 p-3 h-100">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-receipt me-2" style="color:#FF5722;"></i>Resumen de Facturación</h6>
                             <p class="mb-1 small"><strong>Fecha:</strong> ${fmtFecha(pedido.fechaCreacion || pedido.fecha)}</p>
-                            <p class="mb-1 small"><strong>Método Pago:</strong> ${pedido.metodoPago || 'N/D'}</p>
-                            <p class="mb-3 small">${badgeEstado(pedido.estado)}</p>
-                            <div class="text-end border-top pt-3">
-                                <div class="small text-muted mb-1">Total del Pedido</div>
+                            <p class="mb-1 small"><strong>Método de Pago:</strong> ${pedido.metodoPago || 'N/D'}</p>
+                            <p class="mb-2 small"><strong>Estado Actual:</strong> ${badgeEstado(pedido.estado)}</p>
+                            <div class="text-end border-top pt-2">
+                                <div class="small text-muted">Total a Pagar</div>
                                 <h3 class="fw-bold text-danger mb-0">${fmt(pedido.total)}</h3>
                             </div>
                         </div>
                     </div>
                 </div>
-                <h6 class="fw-bold mb-3"><i class="bi bi-bag-check me-2" style="color:#FF5722;"></i>Productos del Pedido</h6>
-                <div>${productosHtml}</div>
+
+                <h6 class="fw-bold mt-4 mb-2"><i class="bi bi-bag-check me-2" style="color:#FF5722;"></i>Zapatillas en el Pedido</h6>
+                <div class="border rounded-4 p-3 bg-white mb-2">${productosHtml}</div>
+
+                ${adminToolsHtml}
             `;
+
             new bootstrap.Modal(document.getElementById('modalDetalle')).show();
         }
 
-        async function cancelarPedido(id) {
-            if (!confirm(`¿Seguro que deseas CANCELAR el pedido #${id}? El stock de los productos será reestablecido.`)) return;
+        async function guardarDespachoAdmin(id) {
+            const estado = document.getElementById('adminNuevoEstado').value;
+            const transportadora = document.getElementById('adminTransportadora').value.trim();
+            const numeroGuia = document.getElementById('adminNumeroGuia').value.trim();
+
             try {
-                const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'PUT', credentials: 'include' });
+                const res = await fetch(`/api/pedidos/${id}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ estado, transportadora, numeroGuia })
+                });
+
                 if (res.ok) {
-                    mostrarToast(`Pedido #${id} cancelado y stock reestablecido.`, 'error');
+                    mostrarToast(`¡Pedido #${id} actualizado exitosamente!`, 'success');
+                    const modalEl = document.getElementById('modalDetalle');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
                     cargarPedidos();
                 } else {
-                    const d = await res.json().catch(() => null);
-                    mostrarToast((d && d.message) || 'No se pudo cancelar.', 'error');
+                    const err = await res.json().catch(() => null);
+                    mostrarToast((err && err.message) || 'No se pudo actualizar el estado.', 'error');
                 }
-            } catch (err) { mostrarToast('Error de conexión.', 'error'); }
+            } catch (e) {
+                mostrarToast('Error de conexión con el servidor.', 'error');
+            }
         }
 
-        async function completarPedido(id) {
-            try {
-                const res = await fetch(`/api/pedidos/${id}/completar`, { method: 'PUT', credentials: 'include' });
-                if (res.ok) {
-                    mostrarToast(`Pedido #${id} marcado como completado ✅`, 'success');
-                    cargarPedidos();
-                } else {
-                    mostrarToast('No se pudo completar el pedido.', 'error');
-                }
-            } catch (err) { mostrarToast('Error de conexión.', 'error'); }
-        }
-
+        // Inicializar al cargar
         cargarPedidos();
 
+        // Polling cada 25 segundos para actualizar estados si no hay interacción activa
         setInterval(() => {
             const inp = document.getElementById('input-buscar');
-            if (inp && document.activeElement !== inp) {
-                fetch('/api/pedidos', { credentials: 'include' })
+            if (inp && document.activeElement !== inp && !document.querySelector('.modal.show')) {
+                const url = esUsuarioAdmin ? '/api/pedidos' : '/api/pedidos/mis-pedidos';
+                fetch(url, { credentials: 'include' })
                     .then(r => r.ok ? r.json() : null)
                     .then(d => { if (d) { todosLosPedidos = d; filtrarPedidos(); } })
                     .catch(() => {});
             }
-        }, 15000);
+        }, 25000);
     </script>
 </body>
 </html>

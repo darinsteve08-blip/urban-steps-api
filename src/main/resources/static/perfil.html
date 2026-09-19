@@ -154,6 +154,9 @@
         <!-- PANEL DE ACCIONES DEL CLIENTE                 -->
         <!-- ============================================== -->
         <div id="panelCliente" class="d-none">
+            <!-- Widget de Seguimiento en Tiempo Real del Cliente -->
+            <div id="contenedorRastreoCliente" class="mb-4"></div>
+
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <h4 class="fw-bold mb-0 text-dark">
                     <i class="bi bi-grid-fill me-2 text-danger"></i>Opciones de tu Cuenta
@@ -227,6 +230,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Resumen Operativo de Pedidos para Admin -->
+            <div id="contenedorStatsAdmin" class="mb-4"></div>
 
             <div class="row g-4">
                 <!-- Gestión de Productos -->
@@ -391,11 +397,13 @@
                         badgeRol.style.backgroundColor = '#dc2626';
                         badgeRol.style.color = '#fff';
                         document.getElementById('panelAdmin').classList.remove('d-none');
+                        cargarResumenAdmin();
                     } else {
                         badgeRol.textContent = '👟 Cliente Urban Steps';
                         badgeRol.style.backgroundColor = '#16a34a';
                         badgeRol.style.color = '#fff';
                         document.getElementById('panelCliente').classList.remove('d-none');
+                        cargarResumenCliente();
                     }
                 } else {
                     mostrarToastPerfil('Debes iniciar sesión para acceder a tu perfil.', 'error');
@@ -406,6 +414,122 @@
                 mostrarToastPerfil('Error de conexión con el servidor.', 'error');
             }
         });
+
+        async function cargarResumenCliente() {
+            try {
+                const res = await fetch('/api/pedidos/mis-pedidos', { credentials: 'include' });
+                if (!res.ok) return;
+                const pedidos = await res.json();
+                const contenedor = document.getElementById('contenedorRastreoCliente');
+                if (!contenedor) return;
+
+                if (!pedidos || pedidos.length === 0) {
+                    contenedor.innerHTML = `
+                        <div class="card border-0 p-4 rounded-4 shadow-sm bg-white mb-4">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-light p-3 rounded-circle text-danger fs-3">
+                                        <i class="bi bi-bag-plus"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">Aún no tienes pedidos registrados</h6>
+                                        <p class="text-muted small mb-0">Explora nuestras últimas colecciones de zapatillas urbanas y deportivas.</p>
+                                    </div>
+                                </div>
+                                <a href="index.html#catalogo" class="btn btn-dark rounded-pill px-4 fw-semibold">
+                                    Comprar Ahora <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>`;
+                    return;
+                }
+
+                const pedidoActivo = pedidos.find(p => ['PENDIENTE', 'PAGADO', 'EN_PREPARACION', 'EN_CAMINO'].includes(p.estado)) || pedidos[0];
+                const est = pedidoActivo.estado || 'PENDIENTE';
+                const mapaNiveles = { 'PENDIENTE': 1, 'PAGADO': 2, 'EN_PREPARACION': 3, 'EN_CAMINO': 4, 'COMPLETADO': 5 };
+                const nivel = mapaNiveles[est] || 1;
+                const pasos = ['Recibido', 'Pago OK', 'En Bodega', 'En Camino', 'Entregado'];
+
+                const miniStepper = pasos.map((nombre, i) => {
+                    const num = i + 1;
+                    const activo = num === nivel;
+                    const completado = num < nivel;
+                    const color = completado ? '#16a34a' : (activo ? '#FF5722' : '#cbd5e1');
+                    return `
+                        <div class="text-center flex-fill position-relative">
+                            <div style="width:30px;height:30px;border-radius:50%;background:${color};color:#fff;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;">
+                                ${completado ? '<i class="bi bi-check-lg"></i>' : num}
+                            </div>
+                            <div style="font-size:11px;font-weight:${activo ? '700' : '500'};color:${activo ? '#FF5722' : '#64748b'};">${nombre}</div>
+                        </div>`;
+                }).join('');
+
+                contenedor.innerHTML = `
+                    <div class="card border-0 p-4 rounded-4 shadow-sm bg-white mb-4" style="border-left: 5px solid #FF5722 !important;">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <span class="badge bg-danger mb-1"><i class="bi bi-truck me-1"></i>Rastreo de tu Compra</span>
+                                <h5 class="fw-bold mb-0">Pedido #${pedidoActivo.id} · <span class="text-danger">$${Number(pedidoActivo.total || 0).toLocaleString()} COP</span></h5>
+                            </div>
+                            <a href="pedidos.html" class="btn btn-outline-dark btn-sm rounded-pill px-3 fw-semibold">
+                                Ver Seguimiento Completo <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+
+                        ${pedidoActivo.transportadora || pedidoActivo.numeroGuia ? `
+                            <div class="alert alert-light border d-flex align-items-center justify-content-between p-2 px-3 rounded-3 mb-3">
+                                <small class="text-muted"><i class="bi bi-box-seam text-danger me-1"></i><strong>${pedidoActivo.transportadora || 'Envío'}</strong>: Guía <code>${pedidoActivo.numeroGuia || 'En trámite'}</code></small>
+                                <span class="badge bg-dark">${est}</span>
+                            </div>` : ''}
+
+                        <div class="d-flex justify-content-between align-items-center py-2 px-2 bg-light rounded-4">
+                            ${miniStepper}
+                        </div>
+                    </div>`;
+            } catch(e) {
+                console.error('Error cargando resumen:', e);
+            }
+        }
+
+        async function cargarResumenAdmin() {
+            try {
+                const res = await fetch('/api/pedidos', { credentials: 'include' });
+                if (!res.ok) return;
+                const pedidos = await res.json();
+                const pendientes = pedidos.filter(p => p.estado === 'PENDIENTE' || p.estado === 'EN_PREPARACION').length;
+                const enCamino = pedidos.filter(p => p.estado === 'EN_CAMINO').length;
+                const contenedor = document.getElementById('contenedorStatsAdmin');
+                if (contenedor) {
+                    contenedor.innerHTML = `
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 p-3 rounded-4 shadow-sm bg-white d-flex flex-row align-items-center gap-3">
+                                    <div class="bg-warning-subtle text-warning p-3 rounded-circle fs-3">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-muted small mb-0 text-uppercase fw-bold">Por Despachar / Empacar</h6>
+                                        <h3 class="fw-bold mb-0 text-dark">${pendientes}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 p-3 rounded-4 shadow-sm bg-white d-flex flex-row align-items-center gap-3">
+                                    <div class="bg-info-subtle text-info p-3 rounded-circle fs-3">
+                                        <i class="bi bi-truck"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-muted small mb-0 text-uppercase fw-bold">En Camino con Guía</h6>
+                                        <h3 class="fw-bold mb-0 text-dark">${enCamino}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
 
         function abrirModalEditar() {
             if (!usuarioActual) return;
