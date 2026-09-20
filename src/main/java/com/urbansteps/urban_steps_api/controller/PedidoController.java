@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -26,6 +27,7 @@ public class PedidoController {
     @Autowired
     private ProductoRepository productoRepository;
 
+    @Transactional(readOnly = true)
     @GetMapping
     public List<Pedido> listarPedidos() {
         List<Pedido> pedidos = pedidoRepository.findAllByOrderByIdDesc();
@@ -33,6 +35,7 @@ public class PedidoController {
         return pedidos;
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/mis-pedidos")
     public ResponseEntity<?> misPedidos() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

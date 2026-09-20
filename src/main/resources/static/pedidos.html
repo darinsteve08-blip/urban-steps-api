@@ -541,7 +541,10 @@
                 document.getElementById('tabla-pedidos').innerHTML =
                     `<tr><td colspan="8" class="text-center py-5 text-danger">
                         <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
-                        Error al cargar pedidos. <a href="login.html?redirect=pedidos.html" class="fw-bold text-decoration-none">Inicia sesión</a>
+                        <div class="fw-semibold mb-2">No se pudieron sincronizar los pedidos con el servidor.</div>
+                        <button class="btn btn-outline-dark btn-sm rounded-pill px-4 fw-semibold" onclick="cargarPedidos()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Reintentar
+                        </button>
                     </td></tr>`;
             }
         }
