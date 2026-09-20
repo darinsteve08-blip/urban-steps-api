@@ -28,7 +28,9 @@ public class PedidoController {
 
     @GetMapping
     public List<Pedido> listarPedidos() {
-        return pedidoRepository.findAll();
+        List<Pedido> pedidos = pedidoRepository.findAllByOrderByIdDesc();
+        enriquecerPedidos(pedidos);
+        return pedidos;
     }
 
     @GetMapping("/mis-pedidos")
@@ -43,7 +45,28 @@ public class PedidoController {
 
         String email = auth.getName();
         List<Pedido> pedidos = pedidoRepository.findByEmailClienteOrderByFechaCreacionDesc(email);
+        enriquecerPedidos(pedidos);
         return ResponseEntity.ok(pedidos);
+    }
+
+    private void enriquecerPedidos(List<Pedido> pedidos) {
+        if (pedidos == null) return;
+        for (Pedido p : pedidos) {
+            if (p.getProductos() != null) {
+                for (DetallePedido dp : p.getProductos()) {
+                    if (dp.getProductoId() != null) {
+                        productoRepository.findById(dp.getProductoId()).ifPresent(prod -> {
+                            if (dp.getNombreProducto() == null || dp.getNombreProducto().isBlank()) {
+                                dp.setNombreProducto(prod.getNombre());
+                            }
+                            if (dp.getImagenProducto() == null || dp.getImagenProducto().isBlank()) {
+                                dp.setImagenProducto(prod.getImagen());
+                            }
+                        });
+                    }
+                }
+            }
+        }
     }
 
     @PostMapping

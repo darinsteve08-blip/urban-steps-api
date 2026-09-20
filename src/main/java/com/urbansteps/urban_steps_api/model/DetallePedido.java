@@ -1,10 +1,12 @@
 package com.urbansteps.urban_steps_api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "detalle_pedidos")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DetallePedido {
 
     @Id

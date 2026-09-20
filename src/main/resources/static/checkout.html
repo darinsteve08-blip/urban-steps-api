@@ -423,7 +423,8 @@
             const productosPedido = carrito.map(it => ({
                 productoId: it.productoId,
                 cantidad: it.cantidad || 1,
-                precioUnitario: it.precioUnitario
+                precioUnitario: it.precioUnitario,
+                talla: it.talla ? String(it.talla) : null
             }));
 
             const datosOrden = {
@@ -433,7 +434,6 @@
                 metodoPago: metodo,
                 total: totalFinal,
                 estado: 'PENDIENTE',
-                detallesPago: { notas: `Pedido vía ${metodo}` },
                 productos: productosPedido
             };
 

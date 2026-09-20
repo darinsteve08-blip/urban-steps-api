@@ -509,6 +509,7 @@
 
                 if (res.ok) {
                     todosLosPedidos = await res.json();
+                    todosLosPedidos.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
                     filtrarPedidos();
                 } else if (res.status === 403 || res.status === 401) {
                     // Si expiró la sesión o no tiene permisos de admin
@@ -517,6 +518,7 @@
                         esUsuarioAdmin = false;
                         configurarVistaPorRol();
                         todosLosPedidos = await resMios.json();
+                        todosLosPedidos.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
                         filtrarPedidos();
                     } else {
                         document.getElementById('tabla-pedidos').innerHTML =
@@ -705,11 +707,6 @@
             actualizarMetricas(lista);
         }
 
-            renderizarBotonesPaginacion(lista.length);
-            if (esUsuarioAdmin) actualizarGrafico(lista);
-            actualizarMetricas(lista);
-        }
-
         function actualizarGrafico(lista) {
             const ctxEl = document.getElementById('graficoPedidos');
             if (!ctxEl) return;
@@ -853,7 +850,8 @@
             const fechaInicio = document.getElementById('fecha-inicio').value;
             const fechaFin = document.getElementById('fecha-fin').value;
 
-            let lista = todosLosPedidos || [];
+            let lista = [...(todosLosPedidos || [])];
+            lista.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
             if (estadoActualFiltro !== 'TODOS') {
                 lista = lista.filter(p => p.estado === estadoActualFiltro);
             }
@@ -1037,7 +1035,7 @@
                 const url = esUsuarioAdmin ? '/api/pedidos' : '/api/pedidos/mis-pedidos';
                 fetch(url, { credentials: 'include' })
                     .then(r => r.ok ? r.json() : null)
-                    .then(d => { if (d) { todosLosPedidos = d; filtrarPedidos(); } })
+                    .then(d => { if (d) { d.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)); todosLosPedidos = d; filtrarPedidos(); } })
                     .catch(() => {});
             }
         }, 25000);
