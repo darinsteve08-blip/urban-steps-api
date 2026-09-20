@@ -90,6 +90,10 @@ public class UsuarioController {
         boolean nuevoEstado = Boolean.parseBoolean(String.valueOf(body.get("activo")));
         Usuario usuario = usuarioOpt.get();
 
+        if ("admin@urbansteps.com".equalsIgnoreCase(usuario.getEmail()) && !nuevoEstado) {
+            return ResponseEntity.badRequest().body("La cuenta principal de Administrador no puede ser bloqueada.");
+        }
+
         // Evitar que el administrador se bloquee a sí mismo
         if (principal != null && usuario.getEmail().equalsIgnoreCase(principal.getName()) && !nuevoEstado) {
             return ResponseEntity.badRequest().body("No puedes bloquear tu propia cuenta de Administrador.");

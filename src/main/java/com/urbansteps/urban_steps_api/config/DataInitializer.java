@@ -23,31 +23,45 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (usuarioRepository.findByEmail("admin@urbansteps.com").isEmpty()) {
-            Usuario admin = new Usuario();
-            admin.setEmail("admin@urbansteps.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setNombre("Administrador Urban Steps");
-            admin.setRol("ROLE_ADMIN");
-            admin.setTelefono("+57 300 123 4567");
-            admin.setDireccion("Calle Principal #123, Bogotá");
-            admin.setActivo(true);
-            usuarioRepository.save(admin);
-            System.out.println(">>> Usuario Administrador creado: admin@urbansteps.com / admin123");
-        }
+        usuarioRepository.findByEmail("admin@urbansteps.com").ifPresentOrElse(
+            admin -> {
+                admin.setActivo(true);
+                admin.setRol("ROLE_ADMIN");
+                usuarioRepository.save(admin);
+                System.out.println(">>> Usuario Administrador verificado y activo: admin@urbansteps.com");
+            },
+            () -> {
+                Usuario admin = new Usuario();
+                admin.setEmail("admin@urbansteps.com");
+                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setNombre("Administrador Urban Steps");
+                admin.setRol("ROLE_ADMIN");
+                admin.setTelefono("+57 300 123 4567");
+                admin.setDireccion("Calle Principal #123, Bogotá");
+                admin.setActivo(true);
+                usuarioRepository.save(admin);
+                System.out.println(">>> Usuario Administrador creado: admin@urbansteps.com / admin123");
+            }
+        );
 
-        if (usuarioRepository.findByEmail("cliente@urbansteps.com").isEmpty()) {
-            Usuario cliente = new Usuario();
-            cliente.setEmail("cliente@urbansteps.com");
-            cliente.setPassword(passwordEncoder.encode("cliente123"));
-            cliente.setNombre("Cliente Demo");
-            cliente.setRol("ROLE_USER");
-            cliente.setTelefono("+57 310 987 6543");
-            cliente.setDireccion("Carrera 45 #67-89, Medellín");
-            cliente.setActivo(true);
-            usuarioRepository.save(cliente);
-            System.out.println(">>> Usuario Cliente demo creado: cliente@urbansteps.com / cliente123");
-        }
+        usuarioRepository.findByEmail("cliente@urbansteps.com").ifPresentOrElse(
+            cliente -> {
+                cliente.setActivo(true);
+                usuarioRepository.save(cliente);
+            },
+            () -> {
+                Usuario cliente = new Usuario();
+                cliente.setEmail("cliente@urbansteps.com");
+                cliente.setPassword(passwordEncoder.encode("cliente123"));
+                cliente.setNombre("Cliente Demo");
+                cliente.setRol("ROLE_USER");
+                cliente.setTelefono("+57 310 987 6543");
+                cliente.setDireccion("Carrera 45 #67-89, Medellín");
+                cliente.setActivo(true);
+                usuarioRepository.save(cliente);
+                System.out.println(">>> Usuario Cliente demo creado: cliente@urbansteps.com / cliente123");
+            }
+        );
 
         if (productoRepository.count() == 0) {
             crearProductoDemo(
