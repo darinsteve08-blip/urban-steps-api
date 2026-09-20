@@ -329,6 +329,10 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     transform: rotate(20deg) scale(1.06);
 }
 
+.btn-favorito {
+    background: rgba(255, 255, 255, 0.92);
+}
+
 [data-bs-theme="dark"] {
     --bg-primary: #0b1120;
     --bg-card: #1e293b;
@@ -336,7 +340,7 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     --text-muted: #94a3b8;
     --dark: #0f172a;
     background-color: #0b1120 !important;
-    color: #f8fafc;
+    color: #f8fafc !important;
 }
 
 [data-bs-theme="dark"] body {
@@ -358,6 +362,13 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     color: #94a3b8 !important;
 }
 
+[data-bs-theme="dark"] small.text-muted,
+[data-bs-theme="dark"] span.text-muted,
+[data-bs-theme="dark"] p.text-muted,
+[data-bs-theme="dark"] label.text-muted {
+    color: #cbd5e1 !important;
+}
+
 [data-bs-theme="dark"] .border,
 [data-bs-theme="dark"] .border-top,
 [data-bs-theme="dark"] .border-bottom,
@@ -366,6 +377,7 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     border-color: #334155 !important;
 }
 
+/* Tarjetas Generales y de Producto */
 [data-bs-theme="dark"] .card {
     background-color: #1e293b !important;
     border-color: #334155 !important;
@@ -374,23 +386,142 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
 
 [data-bs-theme="dark"] .card-producto {
     background-color: #1e293b !important;
-    border-color: #334155 !important;
+    border: 1.5px solid #334155 !important;
+}
+
+[data-bs-theme="dark"] .card-producto:hover {
+    border-color: #FF5722 !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
 }
 
 [data-bs-theme="dark"] .card-producto .card-img-top {
     background: #0f172a !important;
 }
 
+[data-bs-theme="dark"] .card-producto .card-title {
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .card-producto .card-text {
+    color: #cbd5e1 !important;
+}
+
+[data-bs-theme="dark"] .card-producto .btn-favorito {
+    background: rgba(15, 23, 42, 0.88) !important;
+    border: 1px solid #334155 !important;
+}
+
+[data-bs-theme="dark"] .card-producto .badge.bg-light {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
+    border-color: #475569 !important;
+}
+
+/* Botones de Categorías */
+[data-bs-theme="dark"] #botones-categorias .btn {
+    background-color: #1e293b !important;
+    color: #cbd5e1 !important;
+    border: 1.5px solid #334155 !important;
+}
+
+[data-bs-theme="dark"] #botones-categorias .btn:hover {
+    background-color: #334155 !important;
+    color: #ffffff !important;
+    border-color: #FF5722 !important;
+}
+
+[data-bs-theme="dark"] #botones-categorias .btn.active {
+    background: linear-gradient(135deg, #FF5722, #ea580c) !important;
+    border-color: #FF5722 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(255, 87, 34, 0.4) !important;
+}
+
+/* Botón Añadir al Carrito en Modo Oscuro */
+[data-bs-theme="dark"] .btn-comprar {
+    background: linear-gradient(135deg, #FF5722, #e64a19) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+[data-bs-theme="dark"] .btn-comprar:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f4511e, #d84315) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(255, 87, 34, 0.45) !important;
+}
+
+/* Botones Outline Dark y Dark Generales */
+[data-bs-theme="dark"] .btn-outline-dark {
+    color: #f1f5f9 !important;
+    border-color: #475569 !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-dark:hover {
+    background-color: #334155 !important;
+    border-color: #94a3b8 !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-dark:not(.btn-comprar):not(.btn-theme-toggle) {
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .btn-dark:not(.btn-comprar):not(.btn-theme-toggle):hover {
+    background-color: #475569 !important;
+    border-color: #64748b !important;
+    color: #ffffff !important;
+}
+
+/* Filtro de Tallas y Precios */
+[data-bs-theme="dark"] #filtro-talla {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] #valor-precio-filtro {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border: 1px solid #475569 !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-dark {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border: 1px solid #475569 !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-light {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-secondary {
+    background-color: #475569 !important;
+    color: #f8fafc !important;
+}
+
+/* Panel Card y Perfil */
 [data-bs-theme="dark"] .panel-card {
     background: #1e293b !important;
-    border: 1px solid #334155 !important;
+    border: 1.5px solid #334155 !important;
     color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .panel-card:hover {
+    border-color: #FF5722 !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
 }
 
 [data-bs-theme="dark"] .panel-card .icon-bubble {
     background: #0f172a !important;
 }
 
+/* Tablas */
 [data-bs-theme="dark"] .table {
     --bs-table-bg: #1e293b !important;
     --bs-table-color: #f8fafc !important;
@@ -407,17 +538,20 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     border-color: #334155 !important;
 }
 
+/* Modales */
 [data-bs-theme="dark"] .modal-content {
     background-color: #1e293b !important;
     color: #f8fafc !important;
-    border-color: #334155 !important;
+    border: 1px solid #334155 !important;
 }
 
 [data-bs-theme="dark"] .modal-header,
 [data-bs-theme="dark"] .modal-footer {
     border-color: #334155 !important;
+    background-color: #1e293b !important;
 }
 
+/* Formularios e Inputs */
 [data-bs-theme="dark"] .form-control,
 [data-bs-theme="dark"] .form-select {
     background-color: #0f172a !important;
@@ -432,6 +566,11 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     color: #f8fafc !important;
 }
 
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: #64748b !important;
+}
+
+/* Elementos de Carrito y Checkout */
 [data-bs-theme="dark"] .item-carrito {
     background: #1e293b !important;
     border-color: #334155 !important;
@@ -475,5 +614,15 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
 
 [data-bs-theme="dark"] .dropdown-item:hover {
     background-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .main-image-container {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .thumbnail-img {
+    background: #0f172a !important;
+    border-color: #334155 !important;
 }
 

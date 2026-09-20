@@ -542,7 +542,7 @@ function renderizarProductos(listaProductos) {
                             ${badgesSuperiores}
                         </div>
                         <button class="btn-favorito position-absolute top-0 end-0 m-2 rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center"
-                            style="width: 38px; height: 38px; background: rgba(255, 255, 255, 0.92); z-index: 5; cursor: pointer; transition: transform 0.2s ease;"
+                            style="width: 38px; height: 38px; z-index: 5; cursor: pointer; transition: transform 0.2s ease;"
                             onclick="event.stopPropagation(); toggleFavorito(${producto.id}, this)"
                             title="${esFav ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}">
                             <i class="bi bi-heart${esFav ? '-fill text-danger' : ' text-secondary'}" style="font-size: 18px;"></i>
