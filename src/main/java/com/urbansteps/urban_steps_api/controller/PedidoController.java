@@ -27,6 +27,9 @@ public class PedidoController {
     @Autowired
     private ProductoRepository productoRepository;
 
+    @Autowired
+    private com.urbansteps.urban_steps_api.service.EmailService emailService;
+
     @Transactional(readOnly = true)
     @GetMapping
     public List<Pedido> listarPedidos() {
@@ -116,6 +119,7 @@ public class PedidoController {
         }
 
         Pedido pedidoGuardado = pedidoRepository.save(nuevoPedido);
+        emailService.enviarConfirmacionPedido(pedidoGuardado);
         return ResponseEntity.ok(pedidoGuardado);
     }
 
@@ -146,6 +150,7 @@ public class PedidoController {
         }
 
         pedidoRepository.save(pedido);
+        emailService.enviarActualizacionEstado(pedido, "CANCELADO");
 
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("ok", true);
@@ -163,6 +168,7 @@ public class PedidoController {
 
         pedido.setEstado("COMPLETADO");
         pedidoRepository.save(pedido);
+        emailService.enviarActualizacionEstado(pedido, "ENTREGADO");
 
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("ok", true);
@@ -178,6 +184,7 @@ public class PedidoController {
             return ResponseEntity.notFound().build();
         }
 
+        String estadoAnterior = pedido.getEstado();
         String nuevoEstado = body.get("estado");
         if (nuevoEstado != null && !nuevoEstado.isBlank()) {
             pedido.setEstado(nuevoEstado.toUpperCase().trim());
@@ -191,6 +198,10 @@ public class PedidoController {
         }
 
         pedidoRepository.save(pedido);
+
+        if (nuevoEstado != null && !nuevoEstado.equalsIgnoreCase(estadoAnterior)) {
+            emailService.enviarActualizacionEstado(pedido, nuevoEstado);
+        }
 
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("ok", true);
@@ -215,6 +226,7 @@ public class PedidoController {
         pedido.setEstado(estado);
 
         pedidoRepository.save(pedido);
+        emailService.enviarNotificacionDespacho(pedido);
 
         Map<String, Object> respuesta = new HashMap<>();
         respuesta.put("ok", true);

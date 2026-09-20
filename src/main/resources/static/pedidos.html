@@ -661,7 +661,7 @@
                 });
 
                 if (res.ok) {
-                    mostrarToast(`¡Pedido #${id} actualizado a ${nuevoEstado}! ✅`, 'success');
+                    mostrarToast(`¡Pedido #${id} actualizado a ${nuevoEstado}! Notificación por correo enviada ✉️`, 'success');
                     // Actualizar en memoria y volver a renderizar sin recargar página
                     pedido.estado = nuevoEstado;
                     pedido.transportadora = transportadora;
