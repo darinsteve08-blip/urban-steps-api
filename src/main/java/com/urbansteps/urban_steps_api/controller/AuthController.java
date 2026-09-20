@@ -93,6 +93,8 @@ public class AuthController {
                 "nombre", nombre,
                 "rol", rol
             ));
+        } catch (org.springframework.security.authentication.DisabledException de) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Tu cuenta ha sido desactivada o bloqueada por un administrador.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Correo o contraseña incorrectos.");
         }

@@ -626,3 +626,28 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     border-color: #334155 !important;
 }
 
+/* Panel de Usuarios & Tablas en Modo Oscuro */
+[data-bs-theme="dark"] .role-select {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .search-box {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+}
+
+[data-bs-theme="dark"] .table-light {
+    background-color: #1e293b !important;
+    color: #cbd5e1 !important;
+}
+
+

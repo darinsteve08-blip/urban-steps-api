@@ -31,6 +31,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRol("ROLE_ADMIN");
             admin.setTelefono("+57 300 123 4567");
             admin.setDireccion("Calle Principal #123, Bogotá");
+            admin.setActivo(true);
             usuarioRepository.save(admin);
             System.out.println(">>> Usuario Administrador creado: admin@urbansteps.com / admin123");
         }
@@ -43,6 +44,7 @@ public class DataInitializer implements CommandLineRunner {
             cliente.setRol("ROLE_USER");
             cliente.setTelefono("+57 310 987 6543");
             cliente.setDireccion("Carrera 45 #67-89, Medellín");
+            cliente.setActivo(true);
             usuarioRepository.save(cliente);
             System.out.println(">>> Usuario Cliente demo creado: cliente@urbansteps.com / cliente123");
         }

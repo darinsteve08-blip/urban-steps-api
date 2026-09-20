@@ -46,13 +46,19 @@ public class Usuario {
     @Column(length = 500)
     private String avatarUrl;
 
-    public Usuario() {}
+    @Column(nullable = false)
+    private Boolean activo = true;
+
+    public Usuario() {
+        this.activo = true;
+    }
 
     public Usuario(String email, String password, String nombre, String rol) {
         this.email = email;
         this.password = password;
         this.nombre = nombre;
         this.rol = rol;
+        this.activo = true;
     }
 
     public Long getId() { return id; }
@@ -78,4 +84,7 @@ public class Usuario {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public Boolean getActivo() { return activo == null ? true : activo; }
+    public void setActivo(Boolean activo) { this.activo = activo == null ? true : activo; }
 }

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Steps - Gestión de Usuarios</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/theme.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+        .avatar-admin {
+            background: rgba(255, 87, 34, 0.15);
+            color: #FF5722;
+            border: 2px solid rgba(255, 87, 34, 0.3);
+        }
+        .avatar-operario {
+            background: rgba(13, 110, 253, 0.15);
+            color: #0d6efd;
+            border: 2px solid rgba(13, 110, 253, 0.3);
+        }
+        .avatar-cliente {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+        }
+        .table-custom {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        .table-custom tr {
+            border-radius: 12px;
+            transition: background-color 0.2s ease;
+        }
+        .table-custom td, .table-custom th {
+            vertical-align: middle;
+            padding: 14px 16px;
+        }
+        .role-select {
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .role-select:focus {
+            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.25);
+            border-color: #FF5722;
+        }
+        .toast-container-us {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1090;
+            max-width: 380px;
+        }
+        .search-box {
+            border-radius: 30px;
+            padding-left: 42px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div id="toast-container-us" class="toast-container-us"></div>
+
+    <!-- Barra de Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="index.html" style="font-family: 'Poppins', sans-serif;">
+                Urban<span style="color: #FF5722;">Steps</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn-theme-toggle" id="btn-theme-toggle" title="Cambiar modo oscuro/claro"></button>
+                <a href="index.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-store me-1"></i> Catálogo</a>
+                <a href="pedidos.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-receipt me-1"></i> Pedidos</a>
+                <a href="perfil.html" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="bi bi-person me-1"></i> Mi Perfil</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <!-- Encabezado de Página -->
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+            <div>
+                <span class="badge rounded-pill bg-danger mb-2 px-3 py-1 fw-normal text-white">
+                    <i class="bi bi-shield-lock me-1"></i> Panel de Administración
+                </span>
+                <h2 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;">
+                    <i class="bi bi-people-fill me-2" style="color:#FF5722;"></i>Gestión de Usuarios
+                </h2>
+                <p class="text-muted mb-0">Control centralizado de cuentas, roles de acceso y estados de actividad</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-dark rounded-pill px-3 fw-semibold shadow-sm" onclick="cargarUsuarios()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Tarjetas de Métricas -->
+        <div class="row mb-4 g-3">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Total Usuarios</h6>
+                    <h3 class="fw-bold mb-0" id="stat-total">0</h3>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Administradores</h6>
+                    <h3 class="fw-bold mb-0" style="color: #FF5722;" id="stat-admins">0</h3>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Operarios</h6>
+                    <h3 class="fw-bold mb-0 text-primary" id="stat-operarios">0</h3>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card p-4">
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Bloqueados</h6>
+                    <h3 class="fw-bold mb-0 text-danger" id="stat-bloqueados">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Búsqueda y Filtros -->
+        <div class="card p-3 mb-4 border-0 shadow-sm rounded-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6 col-lg-5 position-relative">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="filtroBusqueda" class="form-control search-box" placeholder="Buscar por nombre, correo o teléfono..." onkeyup="aplicarFiltros()">
+                </div>
+                <div class="col-md-3 col-lg-3">
+                    <select id="filtroRol" class="form-select rounded-pill" onchange="aplicarFiltros()">
+                        <option value="TODOS">Todos los roles</option>
+                        <option value="ROLE_ADMIN">Administradores (ADMIN)</option>
+                        <option value="ROLE_OPERARIO">Operarios (OPERARIO)</option>
+                        <option value="ROLE_CLIENTE">Clientes (CLIENTE)</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <select id="filtroEstado" class="form-select rounded-pill" onchange="aplicarFiltros()">
+                        <option value="TODOS">Todos los estados</option>
+                        <option value="ACTIVO">Activos</option>
+                        <option value="BLOQUEADO">Bloqueados</option>
+                    </select>
+                </div>
+                <div class="col-md-12 col-lg-2 text-end">
+                    <span class="text-muted small fw-semibold" id="contadorResultados">0 usuarios encontrados</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Usuarios -->
+        <div class="card border-0 shadow-sm rounded-4 p-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="text-muted small text-uppercase">
+                            <th scope="col" style="width: 70px;">ID</th>
+                            <th scope="col">Usuario</th>
+                            <th scope="col">Contacto</th>
+                            <th scope="col" style="width: 170px;">Rol</th>
+                            <th scope="col" style="width: 130px;">Estado</th>
+                            <th scope="col" class="text-end" style="width: 140px;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyUsuarios">
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="spinner-border text-danger" role="status"></div>
+                                <p class="text-muted mt-2 mb-0">Cargando lista de usuarios...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Acción -->
+    <div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modalConfirmacionTitulo">Confirmar Acción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3" id="modalConfirmacionMensaje">
+                    ¿Estás seguro de realizar esta acción?
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-semibold" id="btnConfirmarAccion">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let usuariosGlobales = [];
+        let usuarioSesionActual = null;
+        let accionPendiente = null;
+        const modalConfirmacion = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await verificarSesionAdmin();
+            await cargarUsuarios();
+        });
+
+        // 1. Verificación de sesión y permisos
+        async function verificarSesionAdmin() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) {
+                    window.location.href = 'login.html?redirect=usuarios.html';
+                    return;
+                }
+                const user = await res.json();
+                usuarioSesionActual = user;
+
+                const rol = (user.rol || '').toUpperCase();
+                const esAdmin = rol === 'ADMIN' || rol === 'ROLE_ADMIN';
+                if (!esAdmin) {
+                    mostrarToast('Acceso denegado: Solo los administradores pueden gestionar usuarios.', 'danger');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1800);
+                }
+            } catch (err) {
+                window.location.href = 'login.html?redirect=usuarios.html';
+            }
+        }
+
+        // 2. Cargar lista de usuarios
+        async function cargarUsuarios() {
+            const tbody = document.getElementById('tbodyUsuarios');
+            try {
+                const res = await fetch('/api/usuarios');
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        mostrarToast('No tienes permisos de Administrador para ver usuarios.', 'danger');
+                        return;
+                    }
+                    throw new Error('Error al consultar usuarios');
+                }
+
+                usuariosGlobales = await res.json();
+                actualizarEstadisticas(usuariosGlobales);
+                aplicarFiltros();
+            } catch (error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-danger">
+                            <i class="bi bi-exclamation-circle fs-3 d-block mb-2"></i>
+                            Error al cargar la lista de usuarios. Por favor intenta de nuevo.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 3. Actualizar métricas del dashboard
+        function actualizarEstadisticas(usuarios) {
+            const total = usuarios.length;
+            const admins = usuarios.filter(u => normalizarRol(u.rol) === 'ROLE_ADMIN').length;
+            const operarios = usuarios.filter(u => normalizarRol(u.rol) === 'ROLE_OPERARIO').length;
+            const bloqueados = usuarios.filter(u => u.activo === false).length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-admins').textContent = admins;
+            document.getElementById('stat-operarios').textContent = operarios;
+            document.getElementById('stat-bloqueados').textContent = bloqueados;
+        }
+
+        function normalizarRol(rol) {
+            if (!rol) return 'ROLE_CLIENTE';
+            const r = rol.toUpperCase().trim();
+            if (r === 'ADMIN' || r === 'ROLE_ADMIN') return 'ROLE_ADMIN';
+            if (r === 'OPERARIO' || r === 'ROLE_OPERARIO') return 'ROLE_OPERARIO';
+            return 'ROLE_CLIENTE';
+        }
+
+        // 4. Filtrado en vivo
+        function aplicarFiltros() {
+            const busqueda = (document.getElementById('filtroBusqueda').value || '').toLowerCase().trim();
+            const rolSeleccionado = document.getElementById('filtroRol').value;
+            const estadoSeleccionado = document.getElementById('filtroEstado').value;
+
+            const filtrados = usuariosGlobales.filter(u => {
+                const matchBusqueda = !busqueda || 
+                    (u.nombre && u.nombre.toLowerCase().includes(busqueda)) ||
+                    (u.email && u.email.toLowerCase().includes(busqueda)) ||
+                    (u.telefono && u.telefono.toLowerCase().includes(busqueda));
+
+                const userRolNorm = normalizarRol(u.rol);
+                const matchRol = rolSeleccionado === 'TODOS' || userRolNorm === rolSeleccionado;
+
+                const esActivo = u.activo !== false;
+                const matchEstado = estadoSeleccionado === 'TODOS' ||
+                    (estadoSeleccionado === 'ACTIVO' && esActivo) ||
+                    (estadoSeleccionado === 'BLOQUEADO' && !esActivo);
+
+                return matchBusqueda && matchRol && matchEstado;
+            });
+
+            document.getElementById('contadorResultados').textContent = `${filtrados.length} usuario(s) encontrado(s)`;
+            renderizarTabla(filtrados);
+        }
+
+        // 5. Renderizado de filas
+        function renderizarTabla(usuarios) {
+            const tbody = document.getElementById('tbodyUsuarios');
+            if (!usuarios.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
+                            No se encontraron usuarios con los criterios de búsqueda seleccionados.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = usuarios.map(u => {
+                const rolNorm = normalizarRol(u.rol);
+                const esActivo = u.activo !== false;
+                const esMismoUsuario = usuarioSesionActual && usuarioSesionActual.email && u.email && 
+                    usuarioSesionActual.email.toLowerCase() === u.email.toLowerCase();
+
+                let avatarClass = 'avatar-cliente';
+                let rolEtiqueta = 'Cliente';
+                if (rolNorm === 'ROLE_ADMIN') {
+                    avatarClass = 'avatar-admin';
+                    rolEtiqueta = 'Administrador';
+                } else if (rolNorm === 'ROLE_OPERARIO') {
+                    avatarClass = 'avatar-operario';
+                    rolEtiqueta = 'Operario';
+                }
+
+                const iniciales = (u.nombre || u.email || 'U').substring(0, 2).toUpperCase();
+
+                return `
+                    <tr>
+                        <td class="fw-bold text-muted">#${u.id}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="user-avatar ${avatarClass}">
+                                    ${iniciales}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">${escapeHtml(u.nombre || 'Sin nombre')} ${esMismoUsuario ? '<span class="badge bg-secondary ms-1 small">Tú</span>' : ''}</div>
+                                    <div class="text-muted small">${escapeHtml(u.email)}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small"><i class="bi bi-telephone me-1 text-muted"></i>${escapeHtml(u.telefono || 'No registrado')}</div>
+                            <div class="small text-muted text-truncate" style="max-width: 200px;" title="${escapeHtml(u.direccion || '')}">
+                                <i class="bi bi-geo-alt me-1"></i>${escapeHtml(u.direccion || 'Sin dirección')}
+                            </div>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm role-select fw-semibold" 
+                                    onchange="solicitarCambioRol(${u.id}, this.value, '${escapeHtml(u.nombre)}', '${rolNorm}')"
+                                    ${esMismoUsuario ? 'disabled title="No puedes cambiar tu propio rol desde aquí"' : ''}>
+                                <option value="ROLE_ADMIN" ${rolNorm === 'ROLE_ADMIN' ? 'selected' : ''}>Administrador</option>
+                                <option value="ROLE_OPERARIO" ${rolNorm === 'ROLE_OPERARIO' ? 'selected' : ''}>Operario</option>
+                                <option value="ROLE_CLIENTE" ${rolNorm === 'ROLE_CLIENTE' ? 'selected' : ''}>Cliente</option>
+                            </select>
+                        </td>
+                        <td>
+                            ${esActivo 
+                                ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Activo</span>'
+                                : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill"><i class="bi bi-slash-circle-fill me-1"></i> Bloqueado</span>'
+                            }
+                        </td>
+                        <td class="text-end">
+                            ${esMismoUsuario ? `
+                                <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">Sesión activa</span>
+                            ` : `
+                                <button class="btn btn-sm ${esActivo ? 'btn-outline-danger' : 'btn-outline-success'} rounded-pill px-3 fw-semibold" 
+                                        onclick="solicitarCambioEstado(${u.id}, ${!esActivo}, '${escapeHtml(u.nombre)}', '${escapeHtml(u.email)}')">
+                                    <i class="bi ${esActivo ? 'bi-lock-fill' : 'bi-unlock-fill'} me-1"></i>
+                                    ${esActivo ? 'Bloquear' : 'Activar'}
+                                </button>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 6. Solicitudes de cambio con confirmación
+        function solicitarCambioRol(id, nuevoRol, nombre, rolAnterior) {
+            const nombreRol = nuevoRol === 'ROLE_ADMIN' ? 'Administrador' : (nuevoRol === 'ROLE_OPERARIO' ? 'Operario' : 'Cliente');
+            document.getElementById('modalConfirmacionTitulo').textContent = 'Cambiar Rol de Usuario';
+            document.getElementById('modalConfirmacionMensaje').innerHTML = `
+                ¿Deseas asignar el rol de <strong>${nombreRol}</strong> al usuario <strong>${nombre}</strong>?
+            `;
+            
+            const btn = document.getElementById('btnConfirmarAccion');
+            btn.className = 'btn btn-primary rounded-pill px-4 fw-semibold';
+            btn.textContent = 'Guardar Rol';
+
+            accionPendiente = async () => {
+                try {
+                    const res = await fetch(`/api/usuarios/${id}/rol`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rol: nuevoRol })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data || 'Error al cambiar rol');
+
+                    mostrarToast(`Rol actualizado a ${nombreRol} correctamente`, 'success');
+                    await cargarUsuarios();
+                } catch (err) {
+                    mostrarToast(err.message || 'No se pudo actualizar el rol', 'danger');
+                    await cargarUsuarios(); // Revertir selector visual
+                }
+            };
+
+            modalConfirmacion.show();
+        }
+
+        function solicitarCambioEstado(id, nuevoEstado, nombre, email) {
+            const accion = nuevoEstado ? 'Activar' : 'Bloquear';
+            document.getElementById('modalConfirmacionTitulo').textContent = `${accion} Cuenta de Usuario`;
+            document.getElementById('modalConfirmacionMensaje').innerHTML = `
+                ¿Estás seguro de que deseas <strong>${accion.toLowerCase()}</strong> el acceso de <strong>${nombre}</strong> (${email})?
+                <br><small class="text-muted mt-2 d-block">${nuevoEstado ? 'El usuario podrá volver a iniciar sesión.' : 'El usuario no podrá iniciar sesión en la tienda mientras permanezca bloqueado.'}</small>
+            `;
+
+            const btn = document.getElementById('btnConfirmarAccion');
+            btn.className = nuevoEstado ? 'btn btn-success rounded-pill px-4 fw-semibold' : 'btn btn-danger rounded-pill px-4 fw-semibold';
+            btn.textContent = accion;
+
+            accionPendiente = async () => {
+                try {
+                    const res = await fetch(`/api/usuarios/${id}/estado`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ activo: nuevoEstado })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data || 'Error al cambiar estado');
+
+                    mostrarToast(data.mensaje || `Usuario ${accion.toLowerCase()}do con éxito`, 'success');
+                    await cargarUsuarios();
+                } catch (err) {
+                    mostrarToast(err.message || 'No se pudo cambiar el estado del usuario', 'danger');
+                }
+            };
+
+            modalConfirmacion.show();
+        }
+
+        document.getElementById('btnConfirmarAccion').addEventListener('click', async () => {
+            modalConfirmacion.hide();
+            if (accionPendiente) {
+                await accionPendiente();
+                accionPendiente = null;
+            }
+        });
+
+        // 7. Toast de notificaciones
+        function mostrarToast(mensaje, tipo = 'info') {
+            const container = document.getElementById('toast-container-us');
+            const toast = document.createElement('div');
+            const bgClass = tipo === 'success' ? 'bg-success text-white' : (tipo === 'danger' ? 'bg-danger text-white' : 'bg-dark text-white');
+            const icono = tipo === 'success' ? 'bi-check-circle-fill' : (tipo === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
+
+            toast.className = `toast align-items-center ${bgClass} border-0 show shadow-lg mb-2 rounded-4`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex p-3">
+                    <div class="toast-body d-flex align-items-center gap-2 py-0 fw-medium">
+                        <i class="bi ${icono} fs-5"></i>
+                        <span>${escapeHtml(mensaje)}</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

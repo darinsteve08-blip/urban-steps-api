@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers("/", "/index.html", "/login.html", "/registro.html",
                         "/carrito.html", "/checkout.html", "/pago.html",
-                        "/detalle.html", "/perfil.html", "/pedidos.html",
+                        "/detalle.html", "/perfil.html", "/pedidos.html", "/usuarios.html",
                         "/js/**", "/css/**", "/img/**", "/images/**", "/*.html",
                         "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
@@ -62,6 +62,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")
                 .requestMatchers(HttpMethod.POST, "/api/pedidos/**").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/pedidos/**").authenticated()
+
+                // 3. GESTIÓN DE USUARIOS (Solo Administrador)
+                .requestMatchers("/api/usuarios/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
 
                 .anyRequest().authenticated()
             )

@@ -19,10 +19,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
 
+        boolean isActivo = usuario.getActivo() == null || usuario.getActivo();
+
         return User.builder()
                 .username(usuario.getEmail())
                 .password(usuario.getPassword())
                 .authorities(usuario.getRol()) // Asigna ROLE_ADMIN o ROLE_CLIENTE
+                .disabled(!isActivo)
                 .build();
     }
 }

@@ -1175,8 +1175,14 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
                     ${(esAdmin || esOperario) ? `
                     <li>
                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="pedidos.html">
-                            <i class="bi bi-gear text-secondary"></i>
-                            <span>Panel Admin</span>
+                            <i class="bi bi-receipt text-secondary"></i>
+                            <span>Gestión Pedidos</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="usuarios.html">
+                            <i class="bi bi-people text-secondary"></i>
+                            <span>Gestión Usuarios</span>
                         </a>
                     </li>` : `
                     <li>
