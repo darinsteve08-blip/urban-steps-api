@@ -240,6 +240,45 @@
         let pedidoActualId = null;
         let usuarioLogueado = null;
 
+        // ---------- COPIAR AL PORTAPAPELES ----------
+        function copiarAlPortapapeles(texto, btn) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto)
+                    .then(() => mostrarFeedbackCopiado(btn))
+                    .catch(() => fallbackCopiar(texto, btn));
+            } else {
+                fallbackCopiar(texto, btn);
+            }
+        }
+        function fallbackCopiar(texto, btn) {
+            const input = document.createElement('input');
+            input.value = texto;
+            document.body.appendChild(input);
+            input.select();
+            try {
+                document.execCommand('copy');
+                mostrarFeedbackCopiado(btn);
+            } catch (err) {
+                toast('Número: ' + texto, 'info');
+            }
+            document.body.removeChild(input);
+        }
+        function mostrarFeedbackCopiado(btn) {
+            toast('¡Número 313 804 4913 copiado al portapapeles! 📋', 'success');
+            if (btn) {
+                const htmlAnt = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> ¡Copiado!';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-dark');
+                setTimeout(() => {
+                    btn.innerHTML = htmlAnt;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-dark');
+                }, 2000);
+            }
+        }
+        window.copiarAlPortapapeles = copiarAlPortapapeles;
+
         // ---------- TOASTS ----------
         function toast(mensaje, tipo = 'success') {
             const colores = {
@@ -354,44 +393,76 @@
             if (!metodo) { info.classList.add('d-none'); return; }
             info.classList.remove('d-none');
 
+            const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=3138044913";
+
             if (metodo === 'Nequi') {
                 din.innerHTML = `
-                    <div class="d-flex align-items-center gap-2 text-success mb-2">
-                        <i class="bi bi-whatsapp fs-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Pago Manual vía Nequi + WhatsApp</h6>
-                            <small class="text-muted">Confirmación directa con el equipo de soporte</small>
-                        </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-2 rounded-pill fw-bold text-white" style="background: #da0081;">💚 NEQUI</span>
+                        <h6 class="fw-bold mb-0 text-dark">Transferencia Directa a Nequi</h6>
                     </div>
-                    <p class="small text-muted mb-2">Al presionar <strong>"Confirmar y Pagar"</strong>, tu pedido se guardará con estado <span class="badge bg-warning text-dark">PENDIENTE</span> y serás redirigido a WhatsApp con un mensaje predeterminado para coordinar tu transferencia y recibir tu comprobante.</p>
-                    <div class="alert alert-success small py-2 mb-0 border-0 bg-success-subtle text-success-emphasis rounded-3">
-                        <i class="bi bi-phone me-1"></i> <strong>Línea Oficial Nequi:</strong> 313 804 4913 (Urban Steps)
+                    <p class="small text-muted mb-3">Transfiere desde tu app Nequi o escanea el QR. Al completar tu orden, envíanos el comprobante por WhatsApp para despachar de inmediato.</p>
+                    <div class="card p-3 border-0 rounded-4 shadow-sm mb-2" style="background: rgba(218, 0, 129, 0.08); border-left: 4px solid #da0081 !important;">
+                        <div class="row align-items-center g-3">
+                            <div class="col-sm-8">
+                                <small class="text-muted d-block fw-semibold">Número Oficial Nequi:</small>
+                                <span class="fs-4 fw-bold text-dark font-monospace d-block">313 804 4913</span>
+                                <small class="d-block text-muted mb-2">Titular: Urban Steps · 0% comisión</small>
+                                <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="copiarAlPortapapeles('3138044913', this)">
+                                    <i class="bi bi-clipboard me-1"></i> Copiar Número
+                                </button>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <img src="${qrUrl}" alt="QR Nequi" class="rounded-3 shadow-sm bg-white p-1" style="width:110px;height:110px;">
+                                <small class="d-block text-muted mt-1" style="font-size:11px;">Escanea con Nequi</small>
+                            </div>
+                        </div>
                     </div>`;
             } else if (metodo === 'Daviplata') {
                 din.innerHTML = `
-                    <div class="d-flex align-items-center gap-2 text-primary mb-2">
-                        <i class="bi bi-whatsapp fs-3 text-success"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Pago Manual vía Daviplata + WhatsApp</h6>
-                            <small class="text-muted">Confirmación directa con el equipo de soporte</small>
-                        </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-2 rounded-pill fw-bold text-white bg-danger">💙 DAVIPLATA</span>
+                        <h6 class="fw-bold mb-0 text-dark">Transferencia Directa a Daviplata</h6>
                     </div>
-                    <p class="small text-muted mb-2">Tu pedido se registrará como <span class="badge bg-warning text-dark">PENDIENTE</span> y se abrirá WhatsApp con los datos de tu orden para transferir a nuestra línea Daviplata.</p>
-                    <div class="alert alert-primary small py-2 mb-0 border-0 bg-primary-subtle text-primary-emphasis rounded-3">
-                        <i class="bi bi-phone me-1"></i> <strong>Línea Oficial Daviplata:</strong> 313 804 4913 (Urban Steps)
+                    <p class="small text-muted mb-3">Envía el valor exacto a nuestra línea Daviplata o escanea el QR. Luego adjunta tu captura por WhatsApp.</p>
+                    <div class="card p-3 border-0 rounded-4 shadow-sm mb-2" style="background: rgba(220, 38, 38, 0.08); border-left: 4px solid #dc2626 !important;">
+                        <div class="row align-items-center g-3">
+                            <div class="col-sm-8">
+                                <small class="text-muted d-block fw-semibold">Línea Oficial Daviplata:</small>
+                                <span class="fs-4 fw-bold text-dark font-monospace d-block">313 804 4913</span>
+                                <small class="d-block text-muted mb-2">Titular: Urban Steps · 0% comisión</small>
+                                <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="copiarAlPortapapeles('3138044913', this)">
+                                    <i class="bi bi-clipboard me-1"></i> Copiar Número
+                                </button>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <img src="${qrUrl}" alt="QR Daviplata" class="rounded-3 shadow-sm bg-white p-1" style="width:110px;height:110px;">
+                                <small class="d-block text-muted mt-1" style="font-size:11px;">Escanea con Daviplata</small>
+                            </div>
+                        </div>
                     </div>`;
             } else if (metodo === 'Bancolombia') {
                 din.innerHTML = `
-                    <div class="d-flex align-items-center gap-2 text-warning mb-2">
-                        <i class="bi bi-whatsapp fs-3 text-success"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark">Transferencia Bancolombia + WhatsApp</h6>
-                            <small class="text-muted">Transferencia bancaria o código QR</small>
-                        </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge px-3 py-2 rounded-pill fw-bold text-dark bg-warning">💛 BANCOLOMBIA</span>
+                        <h6 class="fw-bold mb-0 text-dark">Transferencia a Bancolombia</h6>
                     </div>
-                    <p class="small text-muted mb-2">Tu pedido quedará registrado como <span class="badge bg-warning text-dark">PENDIENTE</span> y se abrirá WhatsApp con el resumen de la compra para solicitar el código QR o número de cuenta y remitir tu comprobante.</p>
-                    <div class="alert alert-warning small py-2 mb-0 border-0 bg-warning-subtle text-warning-emphasis rounded-3">
-                        <i class="bi bi-bank me-1"></i> <strong>Ahorros Bancolombia:</strong> 123-456789-00 · Urban Steps SAS
+                    <p class="small text-muted mb-3">Transfiere por la app Bancolombia / Ahorros / A la Mano al número o código QR y compártenos el comprobante por WhatsApp.</p>
+                    <div class="card p-3 border-0 rounded-4 shadow-sm mb-2" style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b !important;">
+                        <div class="row align-items-center g-3">
+                            <div class="col-sm-8">
+                                <small class="text-muted d-block fw-semibold">Línea / Llave Bancolombia:</small>
+                                <span class="fs-4 fw-bold text-dark font-monospace d-block">313 804 4913</span>
+                                <small class="d-block text-muted mb-2">Ahorros / A la Mano · Urban Steps</small>
+                                <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-2 fw-semibold" onclick="copiarAlPortapapeles('3138044913', this)">
+                                    <i class="bi bi-clipboard me-1"></i> Copiar Número
+                                </button>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <img src="${qrUrl}" alt="QR Bancolombia" class="rounded-3 shadow-sm bg-white p-1" style="width:110px;height:110px;">
+                                <small class="d-block text-muted mt-1" style="font-size:11px;">Escanea con Bancolombia</small>
+                            </div>
+                        </div>
                     </div>`;
             } else if (metodo === 'PSE') {
                 din.innerHTML = `
@@ -402,7 +473,7 @@
                             <small class="text-muted">Aprobación electrónica inmediata</small>
                         </div>
                     </div>
-                    <p class="small text-muted mb-0">Al hacer clic en confirmar, tu orden se guardará y serás dirigido a la pasarela protegida de pagos electrónicos.</p>`;
+                    <p class="small text-muted mb-0">Al hacer clic in confirmar, tu orden se guardará y podrás coordinar el pago o recibir asistencia directa por WhatsApp.</p>`;
             }
         }
 
@@ -478,28 +549,86 @@
 
                 const itemsStr = carrito.map(it => `• ${it.cantidad || 1}x ${it.nombre} ${it.talla ? `(Talla ${it.talla})` : ''}`).join('\n');
 
-                const mensajeWhatsApp = `Hola Urban Steps 👋, acabo de realizar el pedido #${data.id} por $${totalFmt} COP.\n\n👤 *Cliente:* ${nombre}\n📍 *Ciudad:* ${ciudad}\n👟 *Productos:*\n${itemsStr}\n💳 *Método de Pago:* ${metodo}\n\n¿A qué número o cuenta de ${metodo} realizo la transferencia para enviarles el comprobante?`;
+                const esManual = ['Nequi', 'Bancolombia', 'Daviplata'].includes(metodo);
+
+                const mensajeWhatsApp = esManual
+                    ? `Hola Urban Steps 👋, acabo de realizar el pedido #${data.id} por $${totalFmt} COP.\n\n👤 *Cliente:* ${nombre}\n📍 *Ciudad:* ${ciudad}\n👟 *Productos:*\n${itemsStr}\n💳 *Método de Pago:* ${metodo} (a la línea 313 804 4913)\n\nAdjunto por aquí mi comprobante de pago para que verifiquen y procedan con el despacho de mis zapatillas. ¡Muchas gracias!`
+                    : `Hola Urban Steps 👋, acabo de realizar el pedido #${data.id} por $${totalFmt} COP con ${metodo}.\n\n👤 *Cliente:* ${nombre}\n📍 *Ciudad:* ${ciudad}\n👟 *Productos:*\n${itemsStr}\n\nQuedo atento a la confirmación de mi pedido.`;
+
                 urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensajeWhatsApp)}`;
 
                 // Configurar contenedor de WhatsApp en la vista de éxito
                 const contWa = document.getElementById('contenedor-whatsapp-exito');
                 if (contWa) {
-                    contWa.innerHTML = `
-                        <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 text-white text-center" style="background: linear-gradient(135deg, #25D366, #128C7E);">
-                            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
-                                <i class="bi bi-whatsapp fs-2"></i>
-                                <h4 class="fw-bold mb-0">Confirmar Pago por WhatsApp</h4>
+                    if (esManual) {
+                        contWa.innerHTML = `
+                            <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 text-dark text-start" style="background: #ffffff; border: 2px solid #e2e8f0 !important;">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                                    <div>
+                                        <span class="badge ${metodo === 'Nequi' ? 'text-white' : metodo === 'Daviplata' ? 'bg-danger text-white' : 'bg-warning text-dark'} px-3 py-2 rounded-pill fw-bold" style="${metodo === 'Nequi' ? 'background:#da0081;' : ''}">
+                                            ${metodo === 'Nequi' ? '💚 NEQUI' : metodo === 'Daviplata' ? '💙 DAVIPLATA' : '💛 BANCOLOMBIA'}
+                                        </span>
+                                        <h4 class="fw-bold mb-0 mt-2">Pagar Orden #${data.id}</h4>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">Total a transferir:</small>
+                                        <span class="fs-3 fw-bold text-success font-monospace">$${totalFmt} COP</span>
+                                    </div>
+                                </div>
+
+                                <!-- Caja de Transferencia y QR -->
+                                <div class="card border-0 rounded-4 p-3 mb-3 shadow-sm" style="background: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                                    <div class="row align-items-center g-3">
+                                        <div class="col-md-7">
+                                            <small class="text-muted fw-semibold d-block">Número Oficial de Transferencia (${metodo}):</small>
+                                            <div class="fs-2 fw-bold text-dark font-monospace my-1">313 804 4913</div>
+                                            <small class="text-muted d-block mb-3">Titular: <strong>Urban Steps</strong> · Cuenta Segura Oficial</small>
+                                            <button type="button" class="btn btn-dark rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="copiarAlPortapapeles('3138044913', this)">
+                                                <i class="bi bi-clipboard-check me-1"></i> Copiar Número (313 804 4913)
+                                            </button>
+                                        </div>
+                                        <div class="col-md-5 text-center">
+                                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=3138044913" alt="QR ${metodo}" class="rounded-3 shadow-sm bg-white p-2 border" style="width:130px;height:130px;">
+                                            <small class="d-block text-muted mt-1 fw-semibold" style="font-size:12px;">Escanea con tu app ${metodo}</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pasos a seguir -->
+                                <div class="alert alert-light border rounded-3 p-3 mb-3 small">
+                                    <strong class="d-block mb-2 text-dark"><i class="bi bi-list-check me-1"></i> Instrucciones para confirmar tu compra:</strong>
+                                    <ol class="mb-0 ps-3 text-muted">
+                                        <li class="mb-1">Abre tu app <strong>${metodo}</strong> y transfiere <strong>$${totalFmt} COP</strong> al número <strong>313 804 4913</strong> (o escanea el QR).</li>
+                                        <li class="mb-1">Toma una <strong>captura de pantalla</strong> del comprobante de transferencia exitosa.</li>
+                                        <li>Haz clic en el botón verde de abajo para abrir nuestro WhatsApp oficial y enviarnos la captura.</li>
+                                    </ol>
+                                </div>
+
+                                <!-- Botón WhatsApp -->
+                                <a href="${urlWhatsApp}" target="_blank" class="btn btn-success btn-lg rounded-pill fw-bold text-white px-4 py-3 shadow d-flex align-items-center justify-content-center gap-2 w-100 fs-5">
+                                    <i class="bi bi-whatsapp fs-3"></i> Enviar Comprobante por WhatsApp (+57 313 804 4913)
+                                </a>
+                                <small class="d-block text-center text-muted mt-2">Al hacer clic se abrirá WhatsApp con el resumen de tu pedido #${data.id} ya escrito.</small>
                             </div>
-                            <p class="mb-3 opacity-90 small">
-                                Tu pedido <strong>#${data.id}</strong> ha sido reservado como <strong>PENDIENTE</strong>.<br>
-                                Haz clic en el botón a continuación para abrir WhatsApp, transferir por <strong>${metodo}</strong> y adjuntar tu comprobante:
-                            </p>
-                            <a href="${urlWhatsApp}" target="_blank" class="btn btn-light btn-lg rounded-pill fw-bold text-dark px-4 py-3 shadow d-inline-flex align-items-center justify-content-center gap-2 mx-auto" style="font-size:16px;">
-                                <i class="bi bi-whatsapp text-success fs-4"></i> Continuar al WhatsApp de Urban Steps
-                            </a>
-                            <small class="d-block mt-2 opacity-75">Se abrirá la conversación con los datos de tu pedido prellenados.</small>
-                        </div>
-                    `;
+                        `;
+                    } else {
+                        contWa.innerHTML = `
+                            <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 text-white text-center" style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                                    <i class="bi bi-whatsapp fs-2"></i>
+                                    <h4 class="fw-bold mb-0">Confirmación y Asistencia por WhatsApp</h4>
+                                </div>
+                                <p class="mb-3 opacity-90 small">
+                                    Tu pedido <strong>#${data.id}</strong> ha sido reservado como <strong>PENDIENTE</strong>.<br>
+                                    Cualquier inquietud o soporte con tu pago, puedes comunicarte con nuestro equipo:
+                                </p>
+                                <a href="${urlWhatsApp}" target="_blank" class="btn btn-light btn-lg rounded-pill fw-bold text-dark px-4 py-3 shadow d-inline-flex align-items-center justify-content-center gap-2 mx-auto" style="font-size:16px;">
+                                    <i class="bi bi-whatsapp text-success fs-4"></i> Continuar al WhatsApp de Urban Steps
+                                </a>
+                                <small class="d-block mt-2 opacity-75">Se abrirá la conversación con los datos de tu pedido prellenados.</small>
+                            </div>
+                        `;
+                    }
                 }
 
                 // Ocultar formulario y mostrar éxito

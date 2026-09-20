@@ -126,6 +126,17 @@ public class EmailService {
             ? p.getFechaCreacion().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
             : "Reciente";
 
+        String bloquePagoManual = "";
+        String metodo = p.getMetodoPago() != null ? p.getMetodoPago().trim() : "";
+        if ("Nequi".equalsIgnoreCase(metodo) || "Daviplata".equalsIgnoreCase(metodo) || "Bancolombia".equalsIgnoreCase(metodo)) {
+            bloquePagoManual =
+                "<div style='background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 8px; padding: 14px 18px; margin: 18px 0;'>" +
+                "  <strong style='color: #065f46; font-size: 15px;'>📲 Datos para Transferencia (" + metodo + "):</strong><br>" +
+                "  <span style='color: #047857; font-size: 14px;'>Número / Línea Oficial: <strong>313 804 4913</strong> (Urban Steps)</span><br>" +
+                "  <span style='color: #475569; font-size: 13px;'>Envía el comprobante de tu transferencia por WhatsApp para verificar y despachar tus zapatillas de inmediato.</span>" +
+                "</div>";
+        }
+
         return "<!DOCTYPE html>" +
             "<html><head><meta charset='UTF-8'></head>" +
             "<body style='font-family: Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;'>" +
@@ -156,12 +167,13 @@ public class EmailService {
             "      <div style='text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; color: #FF5722;'>" +
             "        Total: " + formatearDinero(p.getTotal()) + "" +
             "      </div>" +
-            "      <div style='margin-top: 30px; text-align: center;'>" +
+            bloquePagoManual +
+            "      <div style='margin-top: 26px; text-align: center;'>" +
             "        <a href='https://wa.me/573138044913?text=Hola%2C%20acabo%20de%20hacer%20el%20pedido%20%23" + p.getId() + "' style='background: #25D366; color: white; padding: 14px 28px; border-radius: 30px; text-decoration: none; font-weight: bold; display: inline-block;'>📱 Reportar Pago / Asistencia por WhatsApp</a>" +
             "      </div>" +
             "    </div>" +
             "    <div style='background: #f8fafc; padding: 18px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0;'>" +
-            "      Urban Steps Colombia © 2024 · Atención al cliente: +57 313 804 4913" +
+            "      Urban Steps Colombia © 2026 · Atención al cliente: +57 313 804 4913" +
             "    </div>" +
             "  </div>" +
             "</body></html>";
