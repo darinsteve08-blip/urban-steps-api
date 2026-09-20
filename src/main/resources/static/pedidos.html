@@ -166,11 +166,52 @@
             </div>
         </div>
 
-        <!-- Gráfico de Pedidos (Solo visible para Admin) -->
+        <!-- Dashboard Analítico Avanzado (Solo visible para Admin) -->
         <div class="card chart-card p-4 mb-4" id="contenedorGrafico">
-            <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Distribución de Pedidos por Estado</h5>
-            <div style="max-height: 260px; position: relative;">
-                <canvas id="graficoPedidos"></canvas>
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-graph-up-arrow me-2" style="color:#FF5722;"></i>Estadísticas & Rendimiento de Ventas
+                    </h5>
+                    <small class="text-muted">Métricas en tiempo real basadas en los pedidos de la tienda</small>
+                </div>
+                <div class="btn-group btn-group-sm rounded-pill p-1 bg-light border shadow-sm" id="selector-vista-grafico">
+                    <button class="btn btn-sm btn-dark rounded-pill px-3 active fw-semibold" id="btn-tab-estados" onclick="cambiarPestanaGrafico('estados')">
+                        <i class="bi bi-pie-chart-fill me-1"></i> Estados
+                    </button>
+                    <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold border-0" id="btn-tab-ventas" onclick="cambiarPestanaGrafico('ventas')">
+                        <i class="bi bi-cash-stack me-1"></i> Ventas por Fecha
+                    </button>
+                    <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-semibold border-0" id="btn-tab-top" onclick="cambiarPestanaGrafico('top')">
+                        <i class="bi bi-trophy-fill me-1"></i> Top Zapatillas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gráfico 1: Distribución por Estados (Dona / Barras) -->
+            <div id="vista-grafico-estados" class="grafico-pestana">
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-5 col-md-6 text-center" style="max-height: 260px; position: relative;">
+                        <canvas id="graficoEstadosDona" style="max-height: 240px;"></canvas>
+                    </div>
+                    <div class="col-lg-7 col-md-6" style="max-height: 260px; position: relative;">
+                        <canvas id="graficoPedidos" style="max-height: 240px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico 2: Ventas por Fecha / Días -->
+            <div id="vista-grafico-ventas" class="grafico-pestana d-none">
+                <div style="height: 270px; position: relative;">
+                    <canvas id="graficoVentasFechas"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 3: Top Zapatillas Más Vendidas -->
+            <div id="vista-grafico-top" class="grafico-pestana d-none">
+                <div style="height: 270px; position: relative;">
+                    <canvas id="graficoTopProductos"></canvas>
+                </div>
             </div>
         </div>
 
@@ -273,8 +314,29 @@
         let paginaActual = 1;
         let registrosPorPagina = 10;
         let miGrafico = null;
+        let graficoDona = null;
+        let graficoVentas = null;
+        let graficoTop = null;
         let esUsuarioAdmin = false;
         let usuarioSesion = null;
+
+        function cambiarPestanaGrafico(tab) {
+            document.querySelectorAll('.grafico-pestana').forEach(el => el.classList.add('d-none'));
+            document.querySelectorAll('#selector-vista-grafico button').forEach(b => {
+                b.classList.remove('active', 'btn-dark');
+                b.classList.add('btn-outline-dark');
+            });
+
+            const btnActivo = document.getElementById(`btn-tab-${tab}`);
+            if (btnActivo) {
+                btnActivo.classList.add('active', 'btn-dark');
+                btnActivo.classList.remove('btn-outline-dark');
+            }
+
+            const vista = document.getElementById(`vista-grafico-${tab}`);
+            if (vista) vista.classList.remove('d-none');
+        }
+        window.cambiarPestanaGrafico = cambiarPestanaGrafico;
 
         function fmt(v) { return '$' + Number(v || 0).toLocaleString('es-CO') + ' COP'; }
 
@@ -713,43 +775,255 @@
         }
 
         function actualizarGrafico(lista) {
-            const ctxEl = document.getElementById('graficoPedidos');
-            if (!ctxEl) return;
-            const p = lista.filter(x => x.estado === 'PENDIENTE').length;
-            const b = lista.filter(x => x.estado === 'EN_PREPARACION').length;
-            const c = lista.filter(x => x.estado === 'EN_CAMINO').length;
-            const ok = lista.filter(x => x.estado === 'COMPLETADO').length;
-            const k = lista.filter(x => x.estado === 'CANCELADO').length;
+            if (!esUsuarioAdmin) return;
+            const pedidosParaGrafico = lista || todosLosPedidos || [];
 
-            const ctx = ctxEl.getContext('2d');
-            if (miGrafico) miGrafico.destroy();
-            miGrafico = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Recibidos', 'En Bodega', 'En Camino', 'Entregados', 'Cancelados'],
-                    datasets: [{
-                        label: 'Cantidad',
-                        data: [p, b, c, ok, k],
-                        backgroundColor: [
-                            'rgba(245, 158, 11, 0.85)',
-                            'rgba(168, 85, 247, 0.85)',
-                            'rgba(249, 115, 22, 0.85)',
-                            'rgba(34, 197, 94, 0.85)',
-                            'rgba(239, 68, 68, 0.85)'
-                        ],
-                        borderColor: ['#d97706', '#7c3aed', '#ea580c', '#16a34a', '#dc2626'],
-                        borderWidth: 2,
-                        borderRadius: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                }
-            });
+            const esDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            const colorTexto = esDark ? '#cbd5e1' : '#475569';
+            const colorBorde = esDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+
+            // 1. GRAFICO POR ESTADOS (Barras y Dona)
+            const p = pedidosParaGrafico.filter(x => x.estado === 'PENDIENTE').length;
+            const pag = pedidosParaGrafico.filter(x => x.estado === 'PAGADO').length;
+            const b = pedidosParaGrafico.filter(x => x.estado === 'EN_PREPARACION').length;
+            const c = pedidosParaGrafico.filter(x => x.estado === 'EN_CAMINO').length;
+            const ok = pedidosParaGrafico.filter(x => x.estado === 'COMPLETADO').length;
+            const k = pedidosParaGrafico.filter(x => x.estado === 'CANCELADO').length;
+
+            const ctxBarras = document.getElementById('graficoPedidos');
+            if (ctxBarras) {
+                if (miGrafico) miGrafico.destroy();
+                miGrafico = new Chart(ctxBarras.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Recibidos', 'Pago OK', 'En Bodega', 'En Camino', 'Entregados', 'Cancelados'],
+                        datasets: [{
+                            label: 'Pedidos',
+                            data: [p, pag, b, c, ok, k],
+                            backgroundColor: [
+                                'rgba(245, 158, 11, 0.85)',
+                                'rgba(2, 132, 199, 0.85)',
+                                'rgba(168, 85, 247, 0.85)',
+                                'rgba(255, 87, 34, 0.85)',
+                                'rgba(34, 197, 94, 0.85)',
+                                'rgba(239, 68, 68, 0.85)'
+                            ],
+                            borderColor: ['#d97706', '#0284c7', '#7c3aed', '#e64a19', '#16a34a', '#dc2626'],
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.parsed.y} pedido(s)`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, color: colorTexto },
+                                grid: { color: colorBorde }
+                            },
+                            x: {
+                                ticks: { color: colorTexto, font: { weight: '600', size: 11 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const ctxDona = document.getElementById('graficoEstadosDona');
+            if (ctxDona) {
+                if (graficoDona) graficoDona.destroy();
+                graficoDona = new Chart(ctxDona.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Recibidos', 'Pago OK', 'En Bodega', 'En Camino', 'Entregados', 'Cancelados'],
+                        datasets: [{
+                            data: [p, pag, b, c, ok, k],
+                            backgroundColor: [
+                                '#f59e0b',
+                                '#0284c7',
+                                '#a855f7',
+                                '#FF5722',
+                                '#22c55e',
+                                '#ef4444'
+                            ],
+                            borderWidth: 2,
+                            borderColor: esDark ? '#1e293b' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: colorTexto, boxWidth: 12, padding: 10, font: { size: 11, family: 'Poppins' } }
+                            }
+                        },
+                        cutout: '62%'
+                    }
+                });
+            }
+
+            // 2. GRAFICO DE VENTAS POR FECHA
+            const ctxVentas = document.getElementById('graficoVentasFechas');
+            if (ctxVentas) {
+                if (graficoVentas) graficoVentas.destroy();
+
+                const ventasPorFecha = {};
+                const pedidosValidos = pedidosParaGrafico.filter(x => x.estado !== 'CANCELADO');
+
+                pedidosValidos.forEach(ped => {
+                    const f = ped.fechaCreacion || ped.fecha;
+                    const fechaKey = f ? String(f).split('T')[0] : 'Hoy';
+                    ventasPorFecha[fechaKey] = (ventasPorFecha[fechaKey] || 0) + (Number(ped.total) || 0);
+                });
+
+                const fechasOrdenadas = Object.keys(ventasPorFecha).sort();
+                const etiquetasFechas = fechasOrdenadas.map(f => {
+                    if (f === 'Hoy') return 'Hoy';
+                    const partes = f.split('-');
+                    return partes.length === 3 ? `${partes[2]}/${partes[1]}` : f;
+                });
+                const valoresVentas = fechasOrdenadas.map(f => ventasPorFecha[f]);
+
+                graficoVentas = new Chart(ctxVentas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: etiquetasFechas.length ? etiquetasFechas : ['Sin datos'],
+                        datasets: [{
+                            label: 'Ingresos COP',
+                            data: valoresVentas.length ? valoresVentas : [0],
+                            borderColor: '#FF5722',
+                            backgroundColor: 'rgba(255, 87, 34, 0.15)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#FF5722',
+                            pointBorderColor: '#ffffff',
+                            pointHoverRadius: 6,
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` Ingresos: ${fmt(ctx.parsed.y)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: colorTexto,
+                                    callback: (val) => '$' + Number(val).toLocaleString('es-CO')
+                                },
+                                grid: { color: colorBorde }
+                            },
+                            x: {
+                                ticks: { color: colorTexto, font: { weight: '600' } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. GRAFICO TOP ZAPATILLAS MAS VENDIDAS
+            const ctxTop = document.getElementById('graficoTopProductos');
+            if (ctxTop) {
+                if (graficoTop) graficoTop.destroy();
+
+                const conteoProductos = {};
+                pedidosParaGrafico.forEach(ped => {
+                    if (ped.productos && ped.productos.length) {
+                        ped.productos.forEach(dp => {
+                            const nombre = dp.nombreProducto || `Producto #${dp.productoId || ''}`;
+                            conteoProductos[nombre] = (conteoProductos[nombre] || 0) + (Number(dp.cantidad) || 1);
+                        });
+                    }
+                });
+
+                const productosSorted = Object.entries(conteoProductos)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6);
+
+                const nombresTop = productosSorted.length ? productosSorted.map(p => p[0]) : ['Sin ventas aún'];
+                const cantidadesTop = productosSorted.length ? productosSorted.map(p => p[1]) : [0];
+
+                graficoTop = new Chart(ctxTop.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: nombresTop,
+                        datasets: [{
+                            axis: 'y',
+                            label: 'Unidades Vendidas',
+                            data: cantidadesTop,
+                            backgroundColor: [
+                                'rgba(255, 87, 34, 0.85)',
+                                'rgba(59, 130, 246, 0.85)',
+                                'rgba(16, 185, 129, 0.85)',
+                                'rgba(245, 158, 11, 0.85)',
+                                'rgba(139, 92, 246, 0.85)',
+                                'rgba(236, 72, 153, 0.85)'
+                            ],
+                            borderRadius: 8,
+                            borderWidth: 1.5,
+                            borderColor: esDark ? '#334155' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.parsed.x} par(es) vendidos`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, color: colorTexto },
+                                grid: { color: colorBorde }
+                            },
+                            y: {
+                                ticks: {
+                                    color: colorTexto,
+                                    font: { weight: '600', size: 12 },
+                                    callback: function(value) {
+                                        const label = this.getLabelForValue(value);
+                                        return label.length > 22 ? label.substring(0, 22) + '...' : label;
+                                    }
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
         }
+
+        window.addEventListener('themeChanged', () => {
+            if (esUsuarioAdmin) actualizarGrafico(todosLosPedidos);
+        });
 
         function renderizarBotonesPaginacion(totalRegistros) {
             const totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);

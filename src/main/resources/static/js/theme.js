@@ -35,6 +35,8 @@
                 btn.setAttribute('aria-label', 'Modo Oscuro');
             }
         });
+
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: tema } }));
     }
 
     window.toggleModoOscuro = function () {
