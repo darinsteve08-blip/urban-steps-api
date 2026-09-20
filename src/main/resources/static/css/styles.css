@@ -650,4 +650,34 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     color: #cbd5e1 !important;
 }
 
+/* Sección de Reseñas y Calificaciones en Modo Oscuro */
+[data-bs-theme="dark"] #seccion-resenas {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .review-card {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] #contenedor-formulario-resena {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] #contenedor-formulario-resena textarea {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] #resumen-promedio-grande {
+    color: #ffffff !important;
+}
+
+
 

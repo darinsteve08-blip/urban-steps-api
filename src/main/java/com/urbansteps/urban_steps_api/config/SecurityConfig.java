@@ -51,6 +51,9 @@ public class SecurityConfig {
                         "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/productos/*/resenas").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/resenas/**").authenticated()
 
                 // 2. SE AGREGA OPERARIO Y ROLE_OPERARIO A LOS PERMISOS DE GESTIÓN
                 .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "OPERARIO", "ROLE_OPERARIO")

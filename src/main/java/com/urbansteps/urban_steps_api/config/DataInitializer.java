@@ -1,13 +1,17 @@
 package com.urbansteps.urban_steps_api.config;
 
 import com.urbansteps.urban_steps_api.model.Producto;
+import com.urbansteps.urban_steps_api.model.Resena;
 import com.urbansteps.urban_steps_api.model.Usuario;
 import com.urbansteps.urban_steps_api.repository.ProductoRepository;
+import com.urbansteps.urban_steps_api.repository.ResenaRepository;
 import com.urbansteps.urban_steps_api.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,6 +21,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private ProductoRepository productoRepository;
+
+    @Autowired
+    private ResenaRepository resenaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -129,6 +136,27 @@ public class DataInitializer implements CommandLineRunner {
                     true
             );
             System.out.println(">>> 8 productos demo cargados correctamente en la base de datos");
+        }
+
+        if (resenaRepository.count() == 0) {
+            List<Producto> productos = productoRepository.findAll();
+            if (!productos.isEmpty()) {
+                Producto p1 = productos.get(0);
+                resenaRepository.save(new Resena(p1.getId(), "carlos.m@gmail.com", "Carlos Mendoza", 5, "¡Excelente calidad! Las zapatillas son súper cómodas, la amortiguación es increíble y llegaron rapidísimo a Bogotá. Muy recomendadas."));
+                resenaRepository.save(new Resena(p1.getId(), "valeria.g@hotmail.com", "Valeria Gómez", 5, "Me encantó el diseño y los acabados. La talla es exacta como indica la tabla de medidas."));
+                resenaRepository.save(new Resena(p1.getId(), "andres.p@gmail.com", "Andrés Pardo", 4, "Muy buenas zapatillas para entrenar y para vestir casual. 100% originales."));
+
+                if (productos.size() > 1) {
+                    Producto p2 = productos.get(1);
+                    resenaRepository.save(new Resena(p2.getId(), "daniela.r@gmail.com", "Daniela Ramírez", 5, "La comodidad de estas zapatillas no tiene comparación. Llegaron en su caja original y perfectas condiciones."));
+                    resenaRepository.save(new Resena(p2.getId(), "felipe.s@yahoo.com", "Felipe Silva", 5, "Una compra 10/10. La atención al cliente por WhatsApp también fue muy ágil."));
+                }
+                if (productos.size() > 2) {
+                    Producto p3 = productos.get(2);
+                    resenaRepository.save(new Resena(p3.getId(), "laura.v@gmail.com", "Laura Vargas", 5, "Hermosas, combinan con todo y la suela es muy resistente."));
+                }
+                System.out.println(">>> Reseñas y calificaciones demo inicializadas con éxito");
+            }
         }
     }
 

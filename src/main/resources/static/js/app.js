@@ -331,6 +331,15 @@ async function cargarProductos() {
     contenedor.innerHTML = generarSkeletonLoading(6);
 
     try {
+        try {
+            const resResenas = await fetch('/api/resenas/resumen');
+            if (resResenas.ok) {
+                window.resumenResenasGlobal = await resResenas.json();
+            }
+        } catch(e) {
+            window.resumenResenasGlobal = {};
+        }
+
         const data = await realizarPeticionSegura('/api/productos');
 
         if (data && data.length > 0) {
@@ -481,6 +490,21 @@ window.toggleFavorito = function(productoId, btnElement) {
     if (badge) badge.textContent = favs.length;
 };
 
+function generarEstrellasHtmlApp(puntuacion) {
+    const p = Math.max(0, Math.min(5, Number(puntuacion) || 0));
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        if (p >= i) {
+            html += '<i class="bi bi-star-fill text-warning"></i>';
+        } else if (p >= i - 0.5) {
+            html += '<i class="bi bi-star-half text-warning"></i>';
+        } else {
+            html += '<i class="bi bi-star text-muted opacity-50"></i>';
+        }
+    }
+    return html;
+}
+
 // RENDERIZADO DE PRODUCTOS EN CATÁLOGO
 function renderizarProductos(listaProductos) {
     const contenedor = document.getElementById('grid-productos-tienda') || document.getElementById('contenedor-productos');
@@ -521,6 +545,25 @@ function renderizarProductos(listaProductos) {
 
         const esFav = esProductoFavorito(producto.id);
 
+        const resumenResenas = (window.resumenResenasGlobal && window.resumenResenasGlobal[String(producto.id)]) || null;
+        const promedioCal = resumenResenas ? Number(resumenResenas.promedio) : 5.0;
+        const totalCal = resumenResenas ? Number(resumenResenas.total) : 0;
+        const estrellasHtml = totalCal > 0 ? `
+            <div class="d-flex align-items-center gap-1 mb-2">
+                <div class="text-warning small d-flex gap-1" style="font-size: 11px;">
+                    ${generarEstrellasHtmlApp(promedioCal)}
+                </div>
+                <span class="small fw-semibold text-muted" style="font-size: 11px;">${promedioCal.toFixed(1)} (${totalCal})</span>
+            </div>
+        ` : `
+            <div class="d-flex align-items-center gap-1 mb-2">
+                <div class="text-warning small d-flex gap-1" style="font-size: 11px;">
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <span class="small text-muted" style="font-size: 11px;">Nuevo</span>
+            </div>
+        `;
+
         // Generación limpia del botón de compra por ID
         const botonComprarHTML = `
             <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
@@ -557,6 +600,8 @@ function renderizarProductos(listaProductos) {
                         <h5 class="card-title fw-bold mb-1" style="cursor:pointer;min-height:48px;" onclick="verDetalle(${producto.id})" title="${producto.nombre}">
                             ${producto.nombre}
                         </h5>
+
+                        ${estrellasHtml}
 
                         ${coloresHtml ? `<div class="mb-2 small">${coloresHtml}</div>` : ''}
 

@@ -70,6 +70,21 @@
         .spec-label { color: #6b7280; font-weight: 500; }
         .spec-value { color: #111827; font-weight: 600; }
         .toast-container-custom { position: fixed; top: 24px; right: 24px; z-index: 9999; }
+        .star-pick { cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; }
+        .star-pick:hover { transform: scale(1.2); }
+        .review-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px;
+            background: rgba(255, 87, 34, 0.12); color: #FF5722;
+            flex-shrink: 0; text-transform: uppercase;
+        }
+        .review-card {
+            border-radius: 16px; transition: transform 0.2s ease;
+            background: #fff; border: 1px solid #f1f5f9;
+        }
+        .review-card:hover { transform: translateY(-2px); }
+        .progress-bar-stars { background: #f59e0b; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-light">
@@ -114,6 +129,14 @@
                 <div id="badges-superiores" class="mb-3 d-flex gap-2 flex-wrap"></div>
 
                 <h1 id="producto-nombre" class="fw-bold fs-2 text-dark mb-2" style="font-family: 'Poppins', sans-serif; line-height: 1.2;">Cargando producto...</h1>
+
+                <!-- Resumen de Calificación en Cabecera -->
+                <div class="d-flex align-items-center gap-2 mb-3" id="contenedor-estrellas-cabecera">
+                    <div id="estrellas-cabecera" class="text-warning fs-6"></div>
+                    <a href="#seccion-resenas" class="text-decoration-none text-muted small fw-semibold" id="link-scroll-resenas">
+                        <span id="promedio-cabecera">0.0</span> (<span id="total-cabecera">0</span> opiniones)
+                    </a>
+                </div>
 
                 <div class="d-flex align-items-baseline gap-3 mb-3 flex-wrap">
                     <h2 id="producto-precio" class="text-danger fw-bold mb-0" style="font-size: 2.6rem; font-family: 'Poppins', sans-serif;">$0 COP</h2>
@@ -163,6 +186,74 @@
                 <button id="btn-agregar" class="btn btn-lg py-3 fw-bold w-100 shadow-sm mt-auto text-white" style="background: #111827; font-family: 'Poppins', sans-serif; border-radius: 14px; font-size: 1.05rem;" onmouseover="this.style.background='#FF5722'" onmouseout="this.style.background='#111827'">
                     <i class="bi bi-cart-plus me-2 fs-5"></i> Añadir al Carrito 🛒
                 </button>
+            </div>
+        </div>
+
+        <!-- Sección de Reseñas y Calificaciones -->
+        <div id="seccion-resenas" class="mt-5 bg-white p-4 p-md-5 rounded-4 shadow-sm" style="border: 1px solid #f0f0f0;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1" style="font-family: 'Poppins', sans-serif;">
+                        <i class="bi bi-star-fill text-warning me-2"></i>Opiniones de Clientes
+                    </h3>
+                    <p class="text-muted mb-0">Calificaciones y experiencias reales de compradores</p>
+                </div>
+                <button class="btn btn-outline-dark rounded-pill px-4 fw-semibold" id="btn-escribir-opinion" onclick="toggleFormularioResena()">
+                    <i class="bi bi-pencil-square me-1"></i> Escribir Opinión
+                </button>
+            </div>
+
+            <!-- Resumen de Puntuaciones y Barras -->
+            <div class="row g-4 align-items-center mb-5 pb-4 border-bottom">
+                <div class="col-md-4 text-center border-end">
+                    <div class="display-3 fw-bold text-dark" id="resumen-promedio-grande">0.0</div>
+                    <div id="resumen-estrellas-grandes" class="text-warning fs-4 mb-2"></div>
+                    <div class="text-muted small fw-semibold" id="resumen-total-grande">Basado en 0 opiniones</div>
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex flex-column gap-2" id="barras-distribucion">
+                        <!-- Generado dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Reseña (Colapsable) -->
+            <div id="contenedor-formulario-resena" class="card border-0 bg-light p-4 rounded-4 mb-5 shadow-sm" style="display: none;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-chat-heart me-2" style="color:#FF5722;"></i>Comparte tu experiencia</h5>
+                <div id="alerta-resena-no-login" class="alert alert-warning rounded-4 mb-3 d-none">
+                    <i class="bi bi-info-circle me-1"></i> Debes <a href="login.html" class="fw-bold text-dark">iniciar sesión</a> para publicar una calificación.
+                </div>
+                <form id="form-resena" onsubmit="enviarResena(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tu Calificación:</label>
+                        <div class="rating-stars d-flex gap-2 fs-3 text-warning" id="rating-star-picker">
+                            <i class="bi bi-star star-pick" data-val="1" onclick="seleccionarEstrellas(1)"></i>
+                            <i class="bi bi-star star-pick" data-val="2" onclick="seleccionarEstrellas(2)"></i>
+                            <i class="bi bi-star star-pick" data-val="3" onclick="seleccionarEstrellas(3)"></i>
+                            <i class="bi bi-star star-pick" data-val="4" onclick="seleccionarEstrellas(4)"></i>
+                            <i class="bi bi-star star-pick" data-val="5" onclick="seleccionarEstrellas(5)"></i>
+                        </div>
+                        <small class="text-muted" id="texto-calificacion">Selecciona una puntuación de 1 a 5 estrellas</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="input-comentario-resena">Tu Comentario:</label>
+                        <textarea class="form-control rounded-3" id="input-comentario-resena" rows="3" maxlength="1000" placeholder="Describe comodidad, talla, calidad de materiales, acabados..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light rounded-pill px-4" onclick="toggleFormularioResena()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold" style="background: #FF5722; border-color: #FF5722;" id="btn-submit-resena">
+                            <i class="bi bi-send-fill me-1"></i> Publicar Opinión
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de Opiniones -->
+            <div id="lista-resenas-contenedor" class="d-flex flex-column gap-3">
+                <div class="text-center py-4 text-muted" id="resenas-vacias">
+                    <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-secondary"></i>
+                    Sé el primero en calificar este producto.
+                </div>
             </div>
         </div>
 
@@ -525,7 +616,249 @@ document.getElementById('btn-agregar').addEventListener('click', async () => {
     }, 2000);
 });
 
-cargarDetalleProducto();
+// ================= SISTEMA DE RESEÑAS Y CALIFICACIONES =================
+let calificacionSeleccionada = 5;
+let usuarioSesionDetalle = null;
+
+async function verificarSesionDetalle() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            usuarioSesionDetalle = await res.json();
+        }
+    } catch (e) {
+        usuarioSesionDetalle = null;
+    }
+}
+
+function generarEstrellasHtml(puntuacion) {
+    const p = Math.max(0, Math.min(5, Number(puntuacion) || 0));
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        if (p >= i) {
+            html += '<i class="bi bi-star-fill text-warning"></i>';
+        } else if (p >= i - 0.5) {
+            html += '<i class="bi bi-star-half text-warning"></i>';
+        } else {
+            html += '<i class="bi bi-star text-muted opacity-50"></i>';
+        }
+    }
+    return html;
+}
+
+function seleccionarEstrellas(valor) {
+    calificacionSeleccionada = valor;
+    const estrellas = document.querySelectorAll('#rating-star-picker .star-pick');
+    estrellas.forEach((s, idx) => {
+        if (idx < valor) {
+            s.className = 'bi bi-star-fill star-pick text-warning';
+        } else {
+            s.className = 'bi bi-star star-pick text-muted';
+        }
+    });
+
+    const textos = ['', 'Muy mala', 'Regular', 'Buena', 'Muy buena', '¡Excelente!'];
+    const label = document.getElementById('texto-calificacion');
+    if (label) label.textContent = `${valor} de 5 estrellas - ${textos[valor] || ''}`;
+}
+
+function toggleFormularioResena() {
+    const contenedor = document.getElementById('contenedor-formulario-resena');
+    const alerta = document.getElementById('alerta-resena-no-login');
+    const form = document.getElementById('form-resena');
+
+    if (contenedor.style.display === 'none' || !contenedor.style.display) {
+        contenedor.style.display = 'block';
+        if (!usuarioSesionDetalle) {
+            if (alerta) alerta.classList.remove('d-none');
+            if (form) form.style.display = 'none';
+        } else {
+            if (alerta) alerta.classList.add('d-none');
+            if (form) form.style.display = 'block';
+            seleccionarEstrellas(5);
+        }
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        contenedor.style.display = 'none';
+    }
+}
+
+async function cargarResenasProducto(id) {
+    if (!id) return;
+    try {
+        const res = await fetch(`/api/productos/${id}/resenas`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const promedio = Number(data.promedio) || 0;
+        const total = Number(data.total) || 0;
+
+        // 1. Cabecera bajo el título
+        const estrCabecera = document.getElementById('estrellas-cabecera');
+        const promCabecera = document.getElementById('promedio-cabecera');
+        const totCabecera = document.getElementById('total-cabecera');
+        if (estrCabecera) estrCabecera.innerHTML = generarEstrellasHtml(promedio);
+        if (promCabecera) promCabecera.textContent = promedio.toFixed(1);
+        if (totCabecera) totCabecera.textContent = total;
+
+        // 2. Resumen Grande
+        const resProm = document.getElementById('resumen-promedio-grande');
+        const resEstr = document.getElementById('resumen-estrellas-grandes');
+        const resTot = document.getElementById('resumen-total-grande');
+        if (resProm) resProm.textContent = promedio.toFixed(1);
+        if (resEstr) resEstr.innerHTML = generarEstrellasHtml(promedio);
+        if (resTot) resTot.textContent = `Basado en ${total} ${total === 1 ? 'opinión' : 'opiniones'}`;
+
+        // 3. Barras de distribución (5 a 1)
+        const contBarras = document.getElementById('barras-distribucion');
+        if (contBarras) {
+            let htmlBarras = '';
+            for (let i = 5; i >= 1; i--) {
+                const cantidad = (data.distribucion && data.distribucion[String(i)]) || 0;
+                const porcentaje = total > 0 ? Math.round((cantidad / total) * 100) : 0;
+                htmlBarras += `
+                    <div class="d-flex align-items-center gap-2 small">
+                        <span style="width: 60px;" class="fw-semibold text-muted">${i} estrellas</span>
+                        <div class="progress flex-grow-1" style="height: 10px; background-color: #e2e8f0; border-radius: 8px;">
+                            <div class="progress-bar progress-bar-stars" role="progressbar" style="width: ${porcentaje}%;" aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <span style="width: 45px;" class="text-end text-muted">${cantidad}</span>
+                    </div>
+                `;
+            }
+            contBarras.innerHTML = htmlBarras;
+        }
+
+        // 4. Lista de Reseñas
+        const listaCont = document.getElementById('lista-resenas-contenedor');
+        if (listaCont) {
+            if (!data.resenas || data.resenas.length === 0) {
+                listaCont.innerHTML = `
+                    <div class="text-center py-5 text-muted" id="resenas-vacias">
+                        <i class="bi bi-chat-square-dots fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        Aún no hay opiniones para este modelo. ¡Sé el primero en compartir tu experiencia!
+                    </div>
+                `;
+            } else {
+                const esAdminSesion = usuarioSesionDetalle && (
+                    usuarioSesionDetalle.rol === 'ADMIN' || usuarioSesionDetalle.rol === 'ROLE_ADMIN'
+                );
+
+                listaCont.innerHTML = data.resenas.map(r => {
+                    const iniciales = (r.usuarioNombre || 'C').substring(0, 2).toUpperCase();
+                    const fechaStr = r.fecha ? new Date(r.fecha).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Reciente';
+                    const esMiResena = usuarioSesionDetalle && usuarioSesionDetalle.email && 
+                        usuarioSesionDetalle.email.toLowerCase() === (r.usuarioEmail || '').toLowerCase();
+
+                    return `
+                        <div class="card review-card p-4 shadow-sm border-0">
+                            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="review-avatar">
+                                        ${iniciales}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold d-flex align-items-center gap-2">
+                                            <span>${escapeHtml(r.usuarioNombre || 'Cliente Urban')}</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small" style="font-size: 10px;">
+                                                <i class="bi bi-patch-check-fill me-1"></i>Compra Verificada
+                                            </span>
+                                            ${esMiResena ? '<span class="badge bg-secondary rounded-pill small" style="font-size: 10px;">Tu opinión</span>' : ''}
+                                        </div>
+                                        <small class="text-muted">${fechaStr}</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="text-warning fs-6">
+                                        ${generarEstrellasHtml(r.calificacion)}
+                                    </div>
+                                    ${(esMiResena || esAdminSesion) ? `
+                                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="eliminarResena(${r.id})" title="Eliminar opinión">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <p class="mb-0 text-muted mt-2" style="line-height: 1.6;">
+                                ${escapeHtml(r.comentario || 'Sin comentario de texto.')}
+                            </p>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (e) {
+        console.error('Error al cargar reseñas:', e);
+    }
+}
+
+async function enviarResena(event) {
+    event.preventDefault();
+    if (!usuarioSesionDetalle) {
+        mostrarToastDetalle('Debes iniciar sesión para opinar.', 'warning');
+        return;
+    }
+
+    const comentario = (document.getElementById('input-comentario-resena').value || '').trim();
+    const btnSubmit = document.getElementById('btn-submit-resena');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Publicando...';
+
+    try {
+        const res = await fetch(`/api/productos/${productoId}/resenas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                calificacion: calificacionSeleccionada,
+                comentario: comentario
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err || 'Error al publicar reseña');
+        }
+
+        const data = await res.json();
+        mostrarToastDetalle('¡Muchas gracias por calificar estas zapatillas!', 'success');
+        document.getElementById('input-comentario-resena').value = '';
+        document.getElementById('contenedor-formulario-resena').style.display = 'none';
+        await cargarResenasProducto(productoId);
+    } catch (err) {
+        mostrarToastDetalle(err.message || 'No se pudo guardar tu opinión', 'error');
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Publicar Opinión';
+    }
+}
+
+async function eliminarResena(id) {
+    if (!confirm('¿Deseas eliminar esta opinión?')) return;
+    try {
+        const res = await fetch(`/api/resenas/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('No se pudo eliminar la opinión');
+        mostrarToastDetalle('Opinión eliminada', 'info');
+        await cargarResenasProducto(productoId);
+    } catch (e) {
+        mostrarToastDetalle(e.message, 'error');
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+(async () => {
+    await verificarSesionDetalle();
+    await cargarDetalleProducto();
+    await cargarResenasProducto(productoId);
+})();
 </script>
 </body>
 </html>
