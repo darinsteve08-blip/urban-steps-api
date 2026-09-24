@@ -1177,7 +1177,7 @@
                         <div class="flex-grow-1">
                             <div class="fw-semibold">${dp.nombreProducto || `Producto #${dp.productoId}`}</div>
                             <div class="small text-muted">
-                                ${dp.cantidad} ud. ${dp.talla ? `· Talla ${dp.talla}` : ''} · ${fmt((dp.precioUnitario || 0) * (dp.cantidad || 1))}
+                                ${dp.cantidad} ud. ${dp.talla ? `· <span class="badge bg-light text-dark border">Talla ${dp.talla}</span>` : ''} ${dp.color ? `· <span class="badge bg-light text-dark border">${dp.color}</span>` : ''} · ${fmt((dp.precioUnitario || 0) * (dp.cantidad || 1))}
                             </div>
                         </div>
                     </div>`).join('')

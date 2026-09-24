@@ -38,36 +38,15 @@ function obtenerUsuarioSesion() {
 }
 
 function inicializarSesion() {
-    const usuario = obtenerUsuarioSesion();
+    // Por defecto la interfaz inicia en modo invitado limpio.
+    // La verdadera confirmación de autenticación vendrá de verificarSesion() vía el backend.
+    window.usuarioEsAdminGlobal = false;
+    window.usuarioActual = null;
+
     const estaEnPerfil = window.location.pathname.includes('perfil.html');
-
-    if (usuario && (usuario.email || usuario.nombre)) {
-        const rol = (usuario.rol || '').toUpperCase();
-        const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
-        const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
-        window.usuarioEsAdminGlobal = esAdmin || esOperario;
-        window.usuarioActual = usuario;
-
-        actualizarInterfazUsuario(usuario, esAdmin, esOperario);
-
-        // Actualiza indicadores de rol y perfil en el navbar si existen
-        const rolBadge = document.getElementById('rol-badge');
-        if (rolBadge && usuario.rol) {
-            rolBadge.textContent = usuario.rol;
-        }
-
-        const navLoginLink = document.getElementById('nav-login-link');
-        if (navLoginLink) {
-            navLoginLink.textContent = `Hola, ${usuario.nombre || usuario.username || 'Mi Perfil'}`;
-            navLoginLink.href = 'perfil.html';
-        }
-
-        mostrarDatosUsuarioEnHeader(usuario);
-    } else {
-        // Redirige solo si intenta ingresar a la vista de perfil sin sesión activa
-        if (estaEnPerfil) {
-            window.location.href = 'login.html';
-        }
+    const usuario = obtenerUsuarioSesion();
+    if (!usuario && estaEnPerfil) {
+        window.location.href = 'login.html';
     }
 }
 
@@ -84,7 +63,8 @@ function mostrarDatosUsuarioEnHeader(usuario) {
 }
 
 // Función global para Cerrar Sesión (Backend + LocalStorage)
-async function cerrarSesion() {
+async function cerrarSesion(event) {
+    if (event && event.preventDefault) event.preventDefault();
     try {
         await fetch('/logout', {
             method: 'POST',
@@ -94,8 +74,14 @@ async function cerrarSesion() {
         console.error('Error al cerrar sesión en el servidor:', e);
     }
 
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('usuarioActual');
+    try {
+        localStorage.removeItem('usuario');
+        localStorage.removeItem('usuarioActual');
+    } catch (e) {}
+
+    window.usuarioActual = null;
+    window.usuarioEsAdminGlobal = false;
+    actualizarInterfazInvitado();
     window.location.href = 'index.html';
 }
 window.cerrarSesion = cerrarSesion;
@@ -130,18 +116,15 @@ async function realizarPeticionSegura(url, opciones = {}) {
 // ==========================================
 // Muestra u oculta el panel de admin en la interfaz local
 function verificarAccesoAdminUI() {
-    const usuario = obtenerUsuarioSesion();
     const panelAdmin = document.getElementById('panel-admin');
+    const btnPanelAdmin = document.getElementById('btnPanelAdmin');
+    const btnAgregarProducto = document.getElementById('btnAgregarProducto');
 
-    if (panelAdmin) {
-        if (usuario && (usuario.rol === 'ADMIN' || usuario.rol === 'ROLE_ADMIN' || usuario.esAdmin)) {
-            panelAdmin.style.display = 'block';
-            window.usuarioEsAdminGlobal = true;
-        } else {
-            panelAdmin.style.display = 'none';
-            window.usuarioEsAdminGlobal = false;
-        }
-    }
+    const esAdmin = !!window.usuarioEsAdminGlobal;
+
+    if (panelAdmin) panelAdmin.style.display = esAdmin ? 'block' : 'none';
+    if (btnPanelAdmin) btnPanelAdmin.style.display = esAdmin ? 'inline-block' : 'none';
+    if (btnAgregarProducto) btnAgregarProducto.style.display = esAdmin ? 'inline-block' : 'none';
 }
 
 // Función para verificar permiso de administrador y abrir el modal de nuevo producto
@@ -383,7 +366,8 @@ async function cargarProductos() {
                     colores: coloresArray,
                     proveedor: p.proveedor ?? 'Urban Steps',
                     imagen: p.imagen ?? p.imagenUrl ?? p.imagen_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
-                    imagenes: imagenesExtra
+                    imagenes: imagenesExtra,
+                    stockPorTalla: p.stockPorTalla ?? p.stock_por_talla ?? null
                 };
             });
             aplicarFiltrosProductos();
@@ -568,7 +552,7 @@ function renderizarProductos(listaProductos) {
         const botonComprarHTML = `
             <button class="btn btn-comprar btn-sm w-100 fw-bold py-2"
                 ${agotado ? 'disabled' : ''}
-                onclick="agregarAlCarritoRapidoById(${producto.id})">
+                onclick="abrirModalSeleccionRapida(${producto.id})">
                 <i class="bi bi-${agotado ? 'x-circle' : 'cart-plus'} me-1"></i> ${agotado ? 'Agotado' : 'Añadir al carrito'}
             </button>
         `;
@@ -677,7 +661,10 @@ function actualizarModalCarritoMini() {
                     <div>
                         <h6 class="mb-0 fw-bold" style="font-size:13px;">${p.nombre}</h6>
                         <small class="text-muted">${p.cantidad}x $${Number(p.precioUnitario).toLocaleString()} COP</small>
-                        ${p.talla ? `<br><small class="text-secondary">Talla: ${p.talla}</small>` : ''}
+                        <div class="small text-muted" style="font-size:11px;">
+                            ${p.talla ? `<span>Talla: <strong>${p.talla}</strong></span>` : ''}
+                            ${p.color ? `<span class="ms-1">· Color: <strong>${p.color}</strong></span>` : ''}
+                        </div>
                     </div>
                 </div>
                 <button class="btn btn-outline-danger btn-sm" onclick="quitarDelCarritoMini(${index})"><i class="bi bi-trash"></i></button>
@@ -698,16 +685,22 @@ window.quitarDelCarritoMini = function(index) {
 };
 
 function agregarAlCarritoRapido(info) {
-    // Usamos la clave 'carrito' para ser consistentes con carrito.html y checkout.html
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-    const indexExistente = carrito.findIndex(it => it.productoId === info.id && it.talla === info.talla);
+    const indexExistente = carrito.findIndex(it =>
+        it.productoId === info.id &&
+        String(it.talla || '') === String(info.talla || '') &&
+        String(it.color || '') === String(info.color || '')
+    );
+
+    const cantNueva = Number(info.cantidad) || 1;
+    const maxStock = Number(info.stock) > 0 ? Number(info.stock) : 99;
 
     if (indexExistente !== -1) {
-        if (carrito[indexExistente].cantidad < info.stock) {
-            carrito[indexExistente].cantidad += 1;
+        if (carrito[indexExistente].cantidad + cantNueva <= maxStock) {
+            carrito[indexExistente].cantidad += cantNueva;
         } else {
-            if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`Sin más stock disponible (talla ${info.talla})`, 'warning');
+            if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`Sin más stock disponible (máximo ${maxStock} en talla ${info.talla})`, 'warning');
             return;
         }
     } else {
@@ -717,8 +710,9 @@ function agregarAlCarritoRapido(info) {
             precioUnitario: info.precio,
             precio: info.precio,
             talla: info.talla,
-            cantidad: 1,
-            stock: info.stock,
+            color: info.color,
+            cantidad: cantNueva,
+            stock: maxStock,
             imagen: info.imagen
         });
     }
@@ -726,7 +720,8 @@ function agregarAlCarritoRapido(info) {
     localStorage.setItem('carrito', JSON.stringify(carrito));
     actualizarContadorCarrito();
     actualizarModalCarritoMini();
-    if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`"${info.nombre}" añadido al carrito 🛒`, 'success');
+    const detalleVar = `${info.talla ? ` (Talla: ${info.talla}` : ''}${info.color ? ` · Color: ${info.color})` : ')'}`;
+    if (typeof mostrarToastGlobal === 'function') mostrarToastGlobal(`"${info.nombre}"${detalleVar} añadido al carrito 🛒`, 'success');
 }
 window.agregarAlCarritoRapido = agregarAlCarritoRapido;
 
@@ -1125,30 +1120,246 @@ window.ejecutarCambioPassword = async function(event) {
         alert("No se pudo conectar con el servidor para cambiar la contraseña.");
     }
 };
-// Función auxiliar para agregar al carrito de forma segura por ID
-// Función auxiliar para agregar al carrito de forma segura por ID
-window.agregarAlCarritoRapidoById = function(id) {
+// ==========================================
+// SELECCIÓN RÁPIDA DE TALLA Y COLOR EN CATÁLOGO
+// ==========================================
+let quickProductoActual = null;
+let quickColorSeleccionado = null;
+let quickTallaSeleccionada = null;
+let quickStockTallaSeleccionada = null;
+let quickCantidadSeleccionada = 1;
+
+function obtenerMapaStockPorTallaApp(producto) {
+    if (!producto) return {};
+    if (producto.stockPorTalla) {
+        try {
+            return typeof producto.stockPorTalla === 'string'
+                ? JSON.parse(producto.stockPorTalla)
+                : producto.stockPorTalla;
+        } catch (e) {}
+    }
+    const tallas = (producto.tallasDisponibles && producto.tallasDisponibles.length > 0)
+        ? producto.tallasDisponibles
+        : ['40'];
+    const total = Number(producto.stock) || 0;
+    const base = Math.floor(total / (tallas.length || 1));
+    const residuo = total % (tallas.length || 1);
+    const mapa = {};
+    tallas.forEach((t, i) => {
+        mapa[t] = base + (i < residuo ? 1 : 0);
+    });
+    return mapa;
+}
+
+window.abrirModalSeleccionRapida = function(id) {
     if (!window.productosGlobal) return;
     const producto = window.productosGlobal.find(p => p.id === id);
     if (!producto) return;
 
-    // Usar tallasDisponibles (campo mapeado en cargarProductos), con fallback a 'Única'
-    const tallaDefault = (producto.tallasDisponibles && producto.tallasDisponibles.length > 0)
-        ? producto.tallasDisponibles[0]
-        : 'Única';
+    quickProductoActual = producto;
+    quickColorSeleccionado = null;
+    quickTallaSeleccionada = null;
+    quickStockTallaSeleccionada = null;
+    quickCantidadSeleccionada = 1;
+
+    const modalEl = document.getElementById('modalSeleccionRapida');
+    if (!modalEl) {
+        window.location.href = `detalle.html?id=${id}`;
+        return;
+    }
+
+    // Datos del producto
+    const imgEl = document.getElementById('quick-prod-img');
+    if (imgEl) imgEl.src = producto.imagen;
+    const nomEl = document.getElementById('quick-prod-nombre');
+    if (nomEl) nomEl.textContent = producto.nombre;
+    const catEl = document.getElementById('quick-prod-cat');
+    if (catEl) catEl.textContent = producto.categoria || 'Calzado';
+
     const precioConDescuento = producto.descuento > 0
         ? Math.round(producto.precio * (1 - producto.descuento / 100))
         : producto.precio;
+    const precEl = document.getElementById('quick-prod-precio');
+    if (precEl) precEl.textContent = `$${Number(precioConDescuento).toLocaleString()} COP`;
+
+    const totalStock = Number(producto.stock) || 0;
+    const stockTotalEl = document.getElementById('quick-prod-stock-total');
+    if (stockTotalEl) {
+        stockTotalEl.textContent = totalStock > 0 ? `(${totalStock} disponibles en total)` : '(Agotado)';
+    }
+
+    // Renderizar Colores
+    const colores = (producto.colores && producto.colores.length > 0) ? producto.colores : ['Estándar'];
+    const contColores = document.getElementById('quick-colores-container');
+    if (contColores) {
+        contColores.innerHTML = colores.map(c => `
+            <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 btn-quick-color fw-semibold" onclick="seleccionarColorQuick('${c}', this)">
+                <i class="bi bi-circle-fill me-1" style="font-size:10px;"></i> ${c}
+            </button>
+        `).join('');
+    }
+    const lblColor = document.getElementById('quick-color-label');
+    if (lblColor) lblColor.innerHTML = `<span class="badge bg-light text-muted border">Selecciona uno</span>`;
+
+    // Renderizar Tallas con Stock individual
+    const tallas = (producto.tallasDisponibles && producto.tallasDisponibles.length > 0) ? producto.tallasDisponibles : ['Única'];
+    const mapaStock = obtenerMapaStockPorTallaApp(producto);
+    const contTallas = document.getElementById('quick-tallas-container');
+    if (contTallas) {
+        contTallas.innerHTML = tallas.map(t => {
+            const stockT = (mapaStock && mapaStock[t] !== undefined)
+                ? Number(mapaStock[t])
+                : (totalStock === 0 ? 0 : Math.floor(totalStock / tallas.length));
+            const agotada = totalStock === 0 || stockT <= 0;
+            return `
+                <button type="button" class="btn ${agotada ? 'btn-light text-muted border' : 'btn-outline-dark'} btn-sm rounded-3 px-3 py-2 btn-quick-talla text-center"
+                    ${agotada ? 'disabled' : ''}
+                    style="min-width:72px; cursor:${agotada ? 'not-allowed' : 'pointer'};"
+                    onclick="seleccionarTallaQuick('${t}', ${stockT}, this)">
+                    <div class="fw-bold">${t}</div>
+                    <small style="font-size:10px;" class="${agotada ? 'text-danger' : (stockT <= 3 ? 'text-warning' : 'text-muted')}">
+                        ${agotada ? 'Agotada' : `${stockT} disp.`}
+                    </small>
+                </button>
+            `;
+        }).join('');
+    }
+    const lblTalla = document.getElementById('quick-talla-label');
+    if (lblTalla) lblTalla.innerHTML = `<span class="badge bg-light text-muted border">Selecciona una</span>`;
+
+    const stockMsg = document.getElementById('quick-stock-talla-msg');
+    if (stockMsg) stockMsg.innerHTML = '';
+
+    const errAlert = document.getElementById('quick-error-alert');
+    if (errAlert) errAlert.classList.add('d-none');
+
+    const inputCant = document.getElementById('quick-cantidad');
+    if (inputCant) {
+        inputCant.value = 1;
+        inputCant.max = Math.min(totalStock, 99);
+    }
+    const maxHint = document.getElementById('quick-max-hint');
+    if (maxHint) maxHint.textContent = '';
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+};
+
+window.seleccionarColorQuick = function(color, btn) {
+    quickColorSeleccionado = color;
+    document.querySelectorAll('.btn-quick-color').forEach(b => {
+        b.classList.remove('active', 'btn-dark', 'text-white');
+        b.classList.add('btn-outline-dark');
+    });
+    if (btn) {
+        btn.classList.add('active', 'btn-dark', 'text-white');
+        btn.classList.remove('btn-outline-dark');
+    }
+    const lbl = document.getElementById('quick-color-label');
+    if (lbl) {
+        lbl.innerHTML = `<span class="badge bg-dark text-white px-2 py-1"><i class="bi bi-check2 me-1"></i>${color}</span>`;
+    }
+    document.getElementById('quick-error-alert')?.classList.add('d-none');
+};
+
+window.seleccionarTallaQuick = function(talla, stockT, btn) {
+    if (stockT <= 0) return;
+    quickTallaSeleccionada = talla;
+    quickStockTallaSeleccionada = stockT;
+
+    document.querySelectorAll('.btn-quick-talla').forEach(b => {
+        if (!b.disabled) {
+            b.classList.remove('active', 'btn-dark', 'text-white');
+            b.classList.add('btn-outline-dark');
+        }
+    });
+    if (btn) {
+        btn.classList.add('active', 'btn-dark', 'text-white');
+        btn.classList.remove('btn-outline-dark');
+    }
+    const lbl = document.getElementById('quick-talla-label');
+    if (lbl) {
+        lbl.innerHTML = `<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check2 me-1"></i>Talla ${talla}</span>`;
+    }
+    const stockMsg = document.getElementById('quick-stock-talla-msg');
+    if (stockMsg) {
+        stockMsg.innerHTML = `<span class="text-success"><i class="bi bi-box-seam me-1"></i><strong>${stockT} unidades disponibles</strong> en talla <strong>${talla}</strong>.</span>`;
+    }
+
+    const inputCant = document.getElementById('quick-cantidad');
+    if (inputCant) {
+        inputCant.max = Math.min(stockT, 99);
+        if (quickCantidadSeleccionada > stockT) {
+            quickCantidadSeleccionada = Math.max(1, stockT);
+            inputCant.value = quickCantidadSeleccionada;
+        }
+    }
+    const maxHint = document.getElementById('quick-max-hint');
+    if (maxHint) maxHint.textContent = `(Máx. ${stockT} ud.)`;
+
+    document.getElementById('quick-error-alert')?.classList.add('d-none');
+};
+
+window.cambiarCantidadQuick = function(delta) {
+    const input = document.getElementById('quick-cantidad');
+    const maxPermitido = quickStockTallaSeleccionada !== null ? quickStockTallaSeleccionada : 99;
+    let n = parseInt(input.value) || 1;
+    n = Math.max(1, Math.min(maxPermitido, n + delta));
+    input.value = n;
+    quickCantidadSeleccionada = n;
+};
+
+window.validarCantidadQuick = function() {
+    const input = document.getElementById('quick-cantidad');
+    const maxPermitido = quickStockTallaSeleccionada !== null ? quickStockTallaSeleccionada : 99;
+    let n = parseInt(input.value) || 1;
+    n = Math.max(1, Math.min(maxPermitido, n));
+    input.value = n;
+    quickCantidadSeleccionada = n;
+};
+
+window.confirmarAgregarAlCarritoQuick = function() {
+    const errAlert = document.getElementById('quick-error-alert');
+    if (!quickColorSeleccionado) {
+        if (errAlert) {
+            errAlert.textContent = '⚠️ Por favor selecciona un Color antes de añadir al carrito.';
+            errAlert.classList.remove('d-none');
+        }
+        return;
+    }
+    if (!quickTallaSeleccionada) {
+        if (errAlert) {
+            errAlert.textContent = '⚠️ Por favor selecciona una Talla antes de añadir al carrito.';
+            errAlert.classList.remove('d-none');
+        }
+        return;
+    }
+
+    const p = quickProductoActual;
+    const precioConDescuento = p.descuento > 0
+        ? Math.round(p.precio * (1 - p.descuento / 100))
+        : p.precio;
 
     agregarAlCarritoRapido({
-        id: producto.id,
-        nombre: producto.nombre,
+        id: p.id,
+        nombre: p.nombre,
         precio: precioConDescuento,
-        talla: tallaDefault,
-        stock: producto.stock ?? 0,
-        imagen: producto.imagen || producto.imagenUrl || ''
+        talla: String(quickTallaSeleccionada),
+        color: String(quickColorSeleccionado),
+        cantidad: quickCantidadSeleccionada,
+        stock: quickStockTallaSeleccionada || p.stock || 0,
+        imagen: p.imagen || p.imagenUrl || ''
     });
+
+    const modalEl = document.getElementById('modalSeleccionRapida');
+    if (modalEl) {
+        const bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+    }
 };
+
+// Alias para retrocompatibilidad
+window.agregarAlCarritoRapidoById = window.abrirModalSeleccionRapida;
 async function verificarSesion() {
     try {
         const respuesta = await fetch('/api/auth/current', {
@@ -1159,6 +1370,9 @@ async function verificarSesion() {
         if (respuesta.ok) {
             const usuario = await respuesta.json();
             console.log("Sesión detectada exitosamente:", usuario);
+            try {
+                localStorage.setItem('usuario', JSON.stringify(usuario));
+            } catch (e) {}
 
             // Normalizar el rol a mayúsculas
             const rol = usuario.rol ? usuario.rol.toUpperCase() : '';
@@ -1173,13 +1387,11 @@ async function verificarSesion() {
             actualizarInterfazUsuario(usuario, esAdmin, esOperario);
         } else {
             console.log("No hay sesión activa (401 / No autenticado)");
-            window.usuarioEsAdminGlobal = false;
-            window.usuarioActual = null;
             actualizarInterfazInvitado();
         }
     } catch (error) {
         console.error("Error al verificar sesión:", error);
-        window.usuarioEsAdminGlobal = false;
+        actualizarInterfazInvitado();
     }
 }
 
@@ -1266,16 +1478,60 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
         btnAgregarProducto.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
     }
 
-    // 4. Recargar catálogo si aplica (para mostrar botones de eliminar admin)
+    // 4. Recargar catálogo si aplica (para mostrar botones de gestión admin)
     if (typeof cargarProductosTienda === 'function') {
         cargarProductosTienda();
     }
 }
 
 function actualizarInterfazInvitado() {
+    window.usuarioEsAdminGlobal = false;
+    window.usuarioActual = null;
+    try {
+        localStorage.removeItem('usuario');
+        localStorage.removeItem('usuarioActual');
+    } catch (e) {}
+
+    // 1. Restaurar el botón Iniciar Sesión si fue reemplazado por el dropdown de usuario
+    const dropdown = document.getElementById('dropdownUsuarioNav');
+    if (dropdown) {
+        dropdown.outerHTML = `
+            <a href="login.html" id="btnLoginNavbar" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+            </a>
+        `;
+    }
+
+    const btnLoginNavbar = document.getElementById('btnLoginNavbar');
+    if (btnLoginNavbar) {
+        btnLoginNavbar.style.display = 'inline-block';
+    }
+
+    // 2. Ocultar paneles y botones administrativos
     const btnPanelAdmin = document.getElementById('btnPanelAdmin');
     if (btnPanelAdmin) btnPanelAdmin.style.display = 'none';
 
     const btnAgregarProducto = document.getElementById('btnAgregarProducto');
     if (btnAgregarProducto) btnAgregarProducto.style.display = 'none';
+
+    const btnMiPerfil = document.getElementById('btnMiPerfil');
+    if (btnMiPerfil) btnMiPerfil.style.display = 'none';
+
+    const btnCerrarSesion = document.getElementById('btnCerrarSesionNav');
+    if (btnCerrarSesion) btnCerrarSesion.style.display = 'none';
+
+    const panelAdmin = document.getElementById('panel-admin');
+    if (panelAdmin) panelAdmin.style.display = 'none';
+
+    const rolBadge = document.getElementById('rol-badge');
+    if (rolBadge) rolBadge.textContent = '';
+
+    const navLoginLink = document.getElementById('nav-login-link');
+    if (navLoginLink) {
+        navLoginLink.textContent = 'Iniciar Sesión';
+        navLoginLink.href = 'login.html';
+    }
+
+    const contenedorUsuario = document.getElementById('usuario-header');
+    if (contenedorUsuario) contenedorUsuario.innerHTML = '';
 }

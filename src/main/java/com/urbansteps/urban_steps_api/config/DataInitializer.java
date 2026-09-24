@@ -76,7 +76,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Zapatillas deportivas con tecnología Air Max en el talón. Amortiguación superior para correr y uso diario. Diseño moderno y transpirable.",
                     459900.0, 529900.0, 15, 28,
                     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-                    "Deportivas", "Nike", "Rojo/Blanco", "38,39,40,41,42,43,44",
+                    "Deportivas", "Nike", "Rojo, Blanco, Negro", "38,39,40,41,42,43,44",
+                    "{\"38\":3,\"39\":5,\"40\":6,\"41\":5,\"42\":5,\"43\":2,\"44\":2}",
                     true
             );
             crearProductoDemo(
@@ -84,7 +85,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Zapatillas running con suela Boost y tejido Primeknit. Máxima energía en cada zancada. Perfectas para entrenamientos de larga distancia.",
                     589900.0, 699900.0, 15, 15,
                     "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=800&q=80",
-                    "Deportivas", "Adidas", "Negro/Verde", "39,40,41,42,43",
+                    "Deportivas", "Adidas", "Negro, Verde, Blanco", "39,40,41,42,43",
+                    "{\"39\":10,\"40\":0,\"41\":0,\"42\":5,\"43\":0}",
                     true
             );
             crearProductoDemo(
@@ -92,7 +94,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Clásicas zapatillas Puma Suede en su versión 2024. Gamuza premium, suela de goma y el icónico Formstrip lateral. Estilo urbano atemporal.",
                     289900.0, null, 0, 45,
                     "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80",
-                    "Urbanas", "Puma", "Azul Marino", "37,38,39,40,41,42,43,44,45",
+                    "Urbanas", "Puma", "Azul Marino, Negro, Rojo", "37,38,39,40,41,42,43,44,45",
+                    "{\"37\":5,\"38\":5,\"39\":5,\"40\":10,\"41\":10,\"42\":5,\"43\":3,\"44\":2}",
                     false
             );
             crearProductoDemo(
@@ -100,7 +103,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Las legendarias Converse Chuck 70 con lona premium, costuras reforzadas y suela más gruesa. Un ícono de la moda urbana sin fecha de vencimiento.",
                     329900.0, 379900.0, 13, 3,
                     "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80",
-                    "Urbanas", "Converse", "Blanco/Negro", "36,37,38,39,40,41,42",
+                    "Urbanas", "Converse", "Blanco, Negro, Rojo", "36,37,38,39,40,41,42",
+                    "{\"36\":1,\"37\":0,\"38\":1,\"39\":0,\"40\":1,\"41\":0,\"42\":0}",
                     true
             );
             crearProductoDemo(
@@ -108,7 +112,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Botas clásicas Timberland impermeables con cuero premium Nobuck. Ideal para aventuras al aire libre y look casual resistente.",
                     729900.0, null, 0, 12,
                     "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=800&q=80",
-                    "Botas", "Timberland", "Amarillo Clásico", "40,41,42,43,44,45",
+                    "Botas", "Timberland", "Amarillo Clásico, Marrón, Negro", "40,41,42,43,44,45",
+                    "{\"40\":2,\"41\":2,\"42\":2,\"43\":2,\"44\":2,\"45\":2}",
                     false
             );
             crearProductoDemo(
@@ -116,7 +121,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Las Vans Old Skool más la versión Pro con suela Off The Wall reforzada, plantilla acolchada y durabilidad extra para skate o uso diario intenso.",
                     249900.0, 319900.0, 22, 60,
                     "https://images.unsplash.com/photo-1463100099107-aa0980c362e6?auto=format&fit=crop&w=800&q=80",
-                    "Urbanas", "Vans", "Negro/Blanco", "37,38,39,40,41,42,43,44",
+                    "Urbanas", "Vans", "Negro, Blanco, Azul", "37,38,39,40,41,42,43,44",
+                    "{\"37\":5,\"38\":10,\"39\":15,\"40\":15,\"41\":10,\"42\":5}",
                     false
             );
             crearProductoDemo(
@@ -124,7 +130,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Zapatillas lifestyle con estética running de los 2000. Entresuela ABZORB, malla transpirable y detalles en cuero sintético. Comodidad todo el día.",
                     399900.0, null, 0, 20,
                     "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?auto=format&fit=crop&w=800&q=80",
-                    "Deportivas", "New Balance", "Blanco/Azul", "38,39,40,41,42,43",
+                    "Deportivas", "New Balance", "Blanco, Azul, Gris", "38,39,40,41,42,43",
+                    "{\"38\":3,\"39\":4,\"40\":5,\"41\":5,\"42\":3}",
                     false
             );
             crearProductoDemo(
@@ -132,10 +139,20 @@ public class DataInitializer implements CommandLineRunner {
                     "Las icónicas botas de 8 ojales en cuero suave Virginia. Plantilla AirWair con amortiguación y suela resistente al aceite, grasa y alcalinos.",
                     549900.0, 629900.0, 12, 8,
                     "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80",
-                    "Botas", "Dr. Martens", "Negro Cherry", "36,37,38,39,40,41,42",
+                    "Botas", "Dr. Martens", "Negro, Cereza", "36,37,38,39,40,41,42",
+                    "{\"36\":1,\"37\":1,\"38\":2,\"39\":2,\"40\":1,\"41\":1,\"42\":0}",
                     true
             );
             System.out.println(">>> 8 productos demo cargados correctamente en la base de datos");
+        } else {
+            // Asegurar que todos los productos existentes en base de datos tengan stock_por_talla
+            List<Producto> existentes = productoRepository.findAll();
+            for (Producto p : existentes) {
+                if (p.getStockPorTalla() == null || p.getStockPorTalla().isBlank()) {
+                    p.setStockPorTalla(generarStockPorTallaAutomatico(p.getTallas(), p.getStock()));
+                    productoRepository.save(p);
+                }
+            }
         }
 
         if (resenaRepository.count() == 0) {
@@ -163,7 +180,7 @@ public class DataInitializer implements CommandLineRunner {
     private void crearProductoDemo(String nombre, String descripcion, Double precio, Double precioOriginal,
                                    Integer descuento, int stock, String imagenUrl,
                                    String categoria, String proveedor, String color, String tallas,
-                                   boolean destacado) {
+                                   String stockPorTalla, boolean destacado) {
         Producto p = new Producto();
         p.setNombre(nombre);
         p.setDescripcion(descripcion);
@@ -176,7 +193,32 @@ public class DataInitializer implements CommandLineRunner {
         p.setProveedor(proveedor);
         p.setColor(color);
         p.setTallas(tallas);
+        p.setStockPorTalla(stockPorTalla);
         p.setDestacado(destacado);
         productoRepository.save(p);
+    }
+
+    private String generarStockPorTallaAutomatico(String tallasStr, Integer stockTotal) {
+        if (tallasStr == null || tallasStr.isBlank()) return "{}";
+        String[] arr = tallasStr.replace("[", "").replace("]", "").replace("\"", "").split(",");
+        java.util.List<String> tallas = new java.util.ArrayList<>();
+        for (String t : arr) {
+            String limpio = t.trim();
+            if (!limpio.isEmpty()) tallas.add(limpio);
+        }
+        if (tallas.isEmpty()) return "{}";
+
+        int total = stockTotal != null && stockTotal > 0 ? stockTotal : 0;
+        int basePorTalla = total / tallas.size();
+        int residuo = total % tallas.size();
+
+        StringBuilder sb = new StringBuilder("{");
+        for (int i = 0; i < tallas.size(); i++) {
+            int qty = basePorTalla + (i < residuo ? 1 : 0);
+            sb.append("\"").append(tallas.get(i)).append("\":").append(qty);
+            if (i < tallas.size() - 1) sb.append(",");
+        }
+        sb.append("}");
+        return sb.toString();
     }
 }

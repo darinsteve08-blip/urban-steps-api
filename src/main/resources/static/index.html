@@ -453,6 +453,71 @@
         </div>
     </div>
 
+    <!-- Modal Selección Rápida de Talla y Color -->
+    <div class="modal fade" id="modalSeleccionRapida" tabindex="-1" aria-labelledby="modalSeleccionRapidaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold" id="modalSeleccionRapidaLabel">
+                        <i class="bi bi-cart-plus me-2 text-warning"></i>Elige Talla y Color
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex gap-3 align-items-center mb-3 pb-3 border-bottom">
+                        <img id="quick-prod-img" src="" alt="" class="rounded-3 shadow-sm" style="width:72px; height:72px; object-fit:cover;">
+                        <div class="flex-grow-1 min-w-0">
+                            <span id="quick-prod-cat" class="badge bg-secondary mb-1">Categoría</span>
+                            <h6 id="quick-prod-nombre" class="fw-bold mb-1 text-truncate">Nombre de la zapatilla</h6>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span id="quick-prod-precio" class="fw-bold text-danger fs-5">$0 COP</span>
+                                <small id="quick-prod-stock-total" class="text-muted"></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de Color -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-palette me-1 text-danger"></i>1. Selecciona el Color: <span class="text-danger">*</span></span>
+                            <span id="quick-color-label" class="small fw-semibold text-muted">Pendiente</span>
+                        </label>
+                        <div id="quick-colores-container" class="d-flex gap-2 flex-wrap"></div>
+                    </div>
+
+                    <!-- Selector de Talla con Stock individual -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-rulers me-1 text-danger"></i>2. Selecciona la Talla: <span class="text-danger">*</span></span>
+                            <span id="quick-talla-label" class="small fw-semibold text-muted">Pendiente</span>
+                        </label>
+                        <div id="quick-tallas-container" class="d-flex gap-2 flex-wrap"></div>
+                        <div id="quick-stock-talla-msg" class="small mt-2 text-muted fw-semibold"></div>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small"><i class="bi bi-bag me-1"></i>3. Cantidad:</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-dark btn-sm rounded-circle" style="width:36px;height:36px;" onclick="cambiarCantidadQuick(-1)">−</button>
+                            <input type="number" id="quick-cantidad" class="form-control text-center fw-bold rounded-pill" value="1" min="1" max="99" style="width:80px;" onchange="validarCantidadQuick()">
+                            <button type="button" class="btn btn-outline-dark btn-sm rounded-circle" style="width:36px;height:36px;" onclick="cambiarCantidadQuick(1)">+</button>
+                            <span id="quick-max-hint" class="small text-muted ms-2"></span>
+                        </div>
+                    </div>
+
+                    <div id="quick-error-alert" class="alert alert-danger py-2 px-3 rounded-3 small d-none"></div>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btn-confirmar-quick-cart" class="btn btn-dark rounded-pill px-4 fw-bold flex-grow-1" onclick="confirmarAgregarAlCarritoQuick()">
+                        <i class="bi bi-cart-plus me-1"></i> Añadir al Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalCarrito" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">

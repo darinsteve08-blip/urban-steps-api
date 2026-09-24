@@ -169,7 +169,8 @@
             carrito.forEach((item, idx) => {
                 const img = item.imagen || obtenerImagenPorId(item.productoId) || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=200&q=80';
                 const subtotal = Number(item.precioUnitario) * Number(item.cantidad || 1);
-                const tallaHtml = item.talla ? `<small class="text-muted">Talla: <span class="fw-bold text-dark">${item.talla}</span></small>` : '';
+                const tallaHtml = item.talla ? `<span class="badge bg-light text-dark border me-1"><i class="bi bi-tag me-1"></i>Talla: <strong>${item.talla}</strong></span>` : '';
+                const colorHtml = item.color ? `<span class="badge bg-light text-dark border"><i class="bi bi-palette me-1"></i>Color: <strong>${item.color}</strong></span>` : '';
 
                 contenedor.innerHTML += `
                     <div class="item-carrito p-3 d-flex gap-3 align-items-center fade-in-up">
@@ -182,7 +183,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
-                            <div class="mb-2">${tallaHtml}</div>
+                            <div class="mb-2 d-flex flex-wrap align-items-center gap-1">${tallaHtml} ${colorHtml}</div>
                             <div class="d-flex gap-3 flex-wrap align-items-center justify-content-between">
                                 <div class="cantidad-control">
                                     <button onclick="cambiarCantidad(${idx}, -1)" ${item.cantidad <= 1 ? 'disabled' : ''}>
@@ -212,6 +213,10 @@
             const carrito = getCarrito();
             const nuevaCant = (carrito[idx].cantidad || 1) + delta;
             if (nuevaCant < 1) return;
+            if (carrito[idx].stock && nuevaCant > carrito[idx].stock) {
+                mostrarToastCarrito(`Solo hay ${carrito[idx].stock} unidad(es) disponibles para esta selección`, 'warning');
+                return;
+            }
             if (nuevaCant > 99) {
                 mostrarToastCarrito('Máximo 99 unidades por producto', 'warning');
                 return;

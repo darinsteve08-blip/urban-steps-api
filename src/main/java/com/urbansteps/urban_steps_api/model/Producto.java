@@ -57,6 +57,9 @@ public class Producto {
     @Column(length = 120)
     private String tallas;
 
+    @Column(name = "stock_por_talla", length = 1000)
+    private String stockPorTalla;
+
     @Column(nullable = false)
     private Boolean destacado = false;
 
@@ -108,6 +111,9 @@ public class Producto {
 
     public String getTallas() { return tallas; }
     public void setTallas(String tallas) { this.tallas = tallas; }
+
+    public String getStockPorTalla() { return stockPorTalla; }
+    public void setStockPorTalla(String stockPorTalla) { this.stockPorTalla = stockPorTalla; }
 
     public Boolean getDestacado() { return destacado; }
     public void setDestacado(Boolean destacado) { this.destacado = destacado != null ? destacado : false; }

@@ -111,11 +111,13 @@ public class EmailService {
         if (p.getProductos() != null) {
             for (DetallePedido dp : p.getProductos()) {
                 String nombre = dp.getNombreProducto() != null ? dp.getNombreProducto() : "Zapatilla Urban Steps #" + dp.getProductoId();
-                String talla = dp.getTalla() != null ? " (Talla: " + dp.getTalla() + ")" : "";
+                String talla = dp.getTalla() != null && !dp.getTalla().isBlank() ? " · Talla: " + dp.getTalla() : "";
+                String color = dp.getColor() != null && !dp.getColor().isBlank() ? " · Color: " + dp.getColor() : "";
+                String variantes = (talla + color).startsWith(" · ") ? (talla + color).substring(3) : (talla + color);
                 double subtotal = (dp.getPrecioUnitario() != null ? dp.getPrecioUnitario() : 0.0) * (dp.getCantidad() != null ? dp.getCantidad() : 1);
 
                 filasProductos.append("<tr>")
-                    .append("<td style='padding: 12px; border-bottom: 1px solid #f1f5f9;'><strong>").append(nombre).append("</strong><br><span style='color:#64748b; font-size:13px;'>").append(talla).append("</span></td>")
+                    .append("<td style='padding: 12px; border-bottom: 1px solid #f1f5f9;'><strong>").append(nombre).append("</strong><br><span style='color:#64748b; font-size:13px;'>").append(variantes).append("</span></td>")
                     .append("<td style='padding: 12px; border-bottom: 1px solid #f1f5f9; text-align:center;'>").append(dp.getCantidad() != null ? dp.getCantidad() : 1).append("</td>")
                     .append("<td style='padding: 12px; border-bottom: 1px solid #f1f5f9; text-align:right;'>").append(formatearDinero(subtotal)).append("</td>")
                     .append("</tr>");

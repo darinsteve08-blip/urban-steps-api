@@ -75,6 +75,25 @@ public class PedidoController {
         }
     }
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    private Map<String, Integer> parsearStockPorTalla(String json) {
+        if (json == null || json.isBlank()) return new HashMap<>();
+        try {
+            return objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Integer>>() {});
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
+    }
+
+    private String serializarStockPorTalla(Map<String, Integer> mapa) {
+        try {
+            return objectMapper.writeValueAsString(mapa);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
     @PostMapping
     public ResponseEntity<?> crearPedido(@Valid @RequestBody Pedido nuevoPedido) {
         if (nuevoPedido.getEstado() == null || nuevoPedido.getEstado().isEmpty()) {
@@ -104,11 +123,37 @@ public class PedidoController {
                 error.put("stockDisponible", String.valueOf(producto.getStock()));
                 return ResponseEntity.badRequest().body(error);
             }
+
+            // Validar stock específico de la talla solicitada si está configurado
+            if (detalle.getTalla() != null && !detalle.getTalla().isBlank() && producto.getStockPorTalla() != null && !producto.getStockPorTalla().isBlank()) {
+                Map<String, Integer> mapaStock = parsearStockPorTalla(producto.getStockPorTalla());
+                String tLimpia = detalle.getTalla().trim();
+                if (mapaStock.containsKey(tLimpia)) {
+                    int dispTalla = mapaStock.get(tLimpia);
+                    if (dispTalla < detalle.getCantidad()) {
+                        Map<String, String> error = new HashMap<>();
+                        error.put("error", "Stock por talla insuficiente");
+                        error.put("message", "Solo quedan " + dispTalla + " unidades en talla " + tLimpia + " para '" + producto.getNombre() + "'");
+                        return ResponseEntity.badRequest().body(error);
+                    }
+                }
+            }
         }
 
         for (DetallePedido detalle : nuevoPedido.getProductos()) {
             Producto producto = productoRepository.findById(detalle.getProductoId()).get();
-            producto.setStock(producto.getStock() - detalle.getCantidad());
+            producto.setStock(Math.max(0, producto.getStock() - detalle.getCantidad()));
+
+            if (detalle.getTalla() != null && !detalle.getTalla().isBlank() && producto.getStockPorTalla() != null && !producto.getStockPorTalla().isBlank()) {
+                Map<String, Integer> mapaStock = parsearStockPorTalla(producto.getStockPorTalla());
+                String tLimpia = detalle.getTalla().trim();
+                if (mapaStock.containsKey(tLimpia)) {
+                    int nuevoVal = Math.max(0, mapaStock.get(tLimpia) - detalle.getCantidad());
+                    mapaStock.put(tLimpia, nuevoVal);
+                    producto.setStockPorTalla(serializarStockPorTalla(mapaStock));
+                }
+            }
+
             if (detalle.getNombreProducto() == null || detalle.getNombreProducto().isBlank()) {
                 detalle.setNombreProducto(producto.getNombre());
             }
@@ -144,6 +189,14 @@ public class PedidoController {
             for (DetallePedido detalle : pedido.getProductos()) {
                 productoRepository.findById(detalle.getProductoId()).ifPresent(producto -> {
                     producto.setStock(producto.getStock() + detalle.getCantidad());
+                    if (detalle.getTalla() != null && !detalle.getTalla().isBlank() && producto.getStockPorTalla() != null && !producto.getStockPorTalla().isBlank()) {
+                        Map<String, Integer> mapaStock = parsearStockPorTalla(producto.getStockPorTalla());
+                        String tLimpia = detalle.getTalla().trim();
+                        if (mapaStock.containsKey(tLimpia)) {
+                            mapaStock.put(tLimpia, mapaStock.get(tLimpia) + detalle.getCantidad());
+                            producto.setStockPorTalla(serializarStockPorTalla(mapaStock));
+                        }
+                    }
                     productoRepository.save(producto);
                 });
             }

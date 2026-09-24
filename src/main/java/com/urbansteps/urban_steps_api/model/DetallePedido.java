@@ -31,6 +31,10 @@ public class DetallePedido {
     @Column(length = 20)
     private String talla;
 
+    @Size(max = 50, message = "El color no debe exceder 50 caracteres")
+    @Column(length = 50)
+    private String color;
+
     @Transient
     private String nombreProducto;
 
@@ -53,6 +57,9 @@ public class DetallePedido {
 
     public String getTalla() { return talla; }
     public void setTalla(String talla) { this.talla = talla; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 
     public String getNombreProducto() { return nombreProducto; }
     public void setNombreProducto(String nombreProducto) { this.nombreProducto = nombreProducto; }

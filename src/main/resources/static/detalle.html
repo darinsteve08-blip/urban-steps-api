@@ -165,12 +165,23 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <!-- Selector Interactivo de Color -->
+                <div class="mb-4" id="seccion-selector-color">
+                    <label class="form-label fw-bold mb-2 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-palette me-1"></i> Selecciona tu Color:</span>
+                        <span id="color-seleccionado-label" class="small fw-semibold text-muted">Ninguno seleccionado</span>
+                    </label>
+                    <div id="contenedor-colores" class="d-flex gap-2 flex-wrap"></div>
+                </div>
+
+                <!-- Selector Interactivo de Talla con Stock individual -->
+                <div class="mb-4" id="seccion-selector-talla">
                     <label class="form-label fw-bold mb-2 d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-rulers me-1"></i> Selecciona tu Talla:</span>
-                        <span id="talla-msg" class="small text-muted"></span>
+                        <span id="talla-msg" class="small fw-semibold text-muted">Ninguna seleccionada</span>
                     </label>
                     <div id="contenedor-tallas" class="d-flex gap-2 flex-wrap"></div>
+                    <div id="alerta-stock-talla" class="small mt-2 text-muted fw-semibold"></div>
                 </div>
 
                 <div class="mb-4">
@@ -316,25 +327,89 @@ function mostrarToastDetalle(mensaje, tipo = 'success') {
 
 function formatearMonto(v) { return '$' + Number(v || 0).toLocaleString('es-CO') + ' COP'; }
 
-window.cambiarImagenPrincipal = function(url, elementoMiniatura) {
-    document.getElementById('imagen-principal').src = url;
-    document.querySelectorAll('.thumbnail-img').forEach(img => img.classList.remove('active'));
-    if (elementoMiniatura) elementoMiniatura.classList.add('active');
+let tallaSeleccionadaGlobal = null;
+let colorSeleccionadoGlobal = null;
+let stockTallaSeleccionadaGlobal = null;
+
+function obtenerMapaStockPorTalla(producto) {
+    if (!producto) return {};
+    if (producto.stockPorTalla) {
+        try {
+            return typeof producto.stockPorTalla === 'string'
+                ? JSON.parse(producto.stockPorTalla)
+                : producto.stockPorTalla;
+        } catch (e) {}
+    }
+    // Distribución por defecto si no tiene stock_por_talla explícito
+    const tallas = (producto.tallas || '40').replace(/[\[\]"]+/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    const total = Number(producto.stock) || 0;
+    const base = Math.floor(total / (tallas.length || 1));
+    const residuo = total % (tallas.length || 1);
+    const mapa = {};
+    tallas.forEach((t, i) => {
+        mapa[t] = base + (i < residuo ? 1 : 0);
+    });
+    return mapa;
+}
+
+window.seleccionarColor = function(color, btn) {
+    colorSeleccionadoGlobal = color;
+    document.querySelectorAll('.btn-color-chip').forEach(b => {
+        b.classList.remove('active', 'btn-dark', 'text-white');
+        b.classList.add('btn-outline-dark');
+    });
+    if (btn) {
+        btn.classList.add('active', 'btn-dark', 'text-white');
+        btn.classList.remove('btn-outline-dark');
+    }
+    const lbl = document.getElementById('color-seleccionado-label');
+    if (lbl) {
+        lbl.innerHTML = `<span class="badge bg-dark text-white px-3 py-1 rounded-pill"><i class="bi bi-check2 me-1"></i>${color}</span>`;
+    }
 };
 
-window.seleccionarTalla = function(talla, elementoBox) {
-    if (elementoBox.classList.contains('disabled')) return;
+window.seleccionarTallaConStock = function(talla, stockTalla, elementoBox) {
+    if (elementoBox.classList.contains('disabled') || stockTalla <= 0) return;
     tallaSeleccionadaGlobal = talla;
+    stockTallaSeleccionadaGlobal = stockTalla;
+
     document.querySelectorAll('.size-box').forEach(box => box.classList.remove('selected'));
     elementoBox.classList.add('selected');
-    document.getElementById('talla-msg').innerHTML = `Talla <strong class="text-dark">${talla}</strong> seleccionada`;
+
+    const msg = document.getElementById('talla-msg');
+    if (msg) {
+        msg.innerHTML = `<span class="badge bg-success text-white px-3 py-1 rounded-pill"><i class="bi bi-check2 me-1"></i>Talla ${talla} seleccionada</span>`;
+    }
+
+    const alertaStock = document.getElementById('alerta-stock-talla');
+    if (alertaStock) {
+        alertaStock.innerHTML = `
+            <div class="alert alert-info py-2 px-3 rounded-3 mb-0 small d-flex align-items-center gap-2">
+                <i class="bi bi-box-seam fs-6 text-info"></i>
+                <span>Hay <strong>${stockTalla} unidades disponibles</strong> en talla <strong>${talla}</strong>.</span>
+            </div>
+        `;
+    }
+
+    const input = document.getElementById('input-cantidad');
+    if (input) {
+        const max = Math.min(stockTalla, 99);
+        input.max = max;
+        if (cantidadSeleccionada > max) {
+            cantidadSeleccionada = Math.max(1, max);
+            input.value = cantidadSeleccionada;
+        }
+    }
+    actualizarBotonesCantidad();
 };
 
 window.cambiarCantidad = function(delta) {
     const input = document.getElementById('input-cantidad');
-    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    const maxPermitido = stockTallaSeleccionadaGlobal !== null
+        ? stockTallaSeleccionadaGlobal
+        : (productoActual && productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99);
     let n = parseInt(input.value) || 1;
-    n = Math.max(1, Math.min(max, n + delta));
+    n = Math.max(1, Math.min(maxPermitido, n + delta));
     input.value = n;
     cantidadSeleccionada = n;
     actualizarBotonesCantidad();
@@ -342,21 +417,25 @@ window.cambiarCantidad = function(delta) {
 
 window.validarCantidadInput = function() {
     const input = document.getElementById('input-cantidad');
-    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    const maxPermitido = stockTallaSeleccionadaGlobal !== null
+        ? stockTallaSeleccionadaGlobal
+        : (productoActual && productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99);
     let n = parseInt(input.value) || 1;
-    n = Math.max(1, Math.min(max, n));
+    n = Math.max(1, Math.min(maxPermitido, n));
     input.value = n;
     cantidadSeleccionada = n;
     actualizarBotonesCantidad();
 };
 
 function actualizarBotonesCantidad() {
-    const max = productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99;
+    const maxPermitido = stockTallaSeleccionadaGlobal !== null
+        ? stockTallaSeleccionadaGlobal
+        : (productoActual && productoActual.stock > 0 ? Math.min(productoActual.stock, 99) : 99);
     document.getElementById('btn-menos').disabled = cantidadSeleccionada <= 1;
-    document.getElementById('btn-mas').disabled = cantidadSeleccionada >= max;
+    document.getElementById('btn-mas').disabled = cantidadSeleccionada >= maxPermitido;
     const hint = document.getElementById('stock-hint');
-    if (productoActual.stock != null && productoActual.stock > 0) {
-        hint.textContent = `(Máx. ${max} ud.)`;
+    if (maxPermitido > 0) {
+        hint.textContent = `(Máx. ${maxPermitido} ud.${tallaSeleccionadaGlobal ? ` en talla ${tallaSeleccionadaGlobal}` : ''})`;
     }
 }
 
@@ -457,6 +536,29 @@ async function cargarDetalleProducto() {
             `<img src="${url}" class="thumbnail-img ${i === 0 ? 'active' : ''}" onclick="cambiarImagenPrincipal('${url}', this)" alt="Miniatura ${i+1}">`
         ).join('');
 
+        // Renderizar Colores Seleccionables
+        let coloresArray = [];
+        const campoColores = productoActual.color || productoActual.colores;
+        if (campoColores) {
+            coloresArray = typeof campoColores === 'string'
+                ? campoColores.replace(/[\[\]"]+/g, '').split(',').map(c => c.trim()).filter(Boolean)
+                : (Array.isArray(campoColores) ? campoColores : ['Estándar']);
+        }
+        if (coloresArray.length === 0) coloresArray = ['Estándar'];
+
+        colorSeleccionadoGlobal = null;
+        const contColores = document.getElementById('contenedor-colores');
+        if (contColores) {
+            contColores.innerHTML = coloresArray.map(c => `
+                <button type="button" class="btn btn-outline-dark rounded-pill px-3 py-2 btn-color-chip fw-semibold" onclick="seleccionarColor('${c}', this)">
+                    <i class="bi bi-circle-fill me-1" style="font-size:10px;"></i> ${c}
+                </button>
+            `).join('');
+        }
+        const lblColor = document.getElementById('color-seleccionado-label');
+        if (lblColor) lblColor.textContent = 'Ninguno seleccionado';
+
+        // Renderizar Tallas con Stock Específico por Talla
         let tallasArray = [];
         const campoTallas = productoActual.tallas || productoActual.talla || productoActual.tallasDisponibles;
         if (campoTallas) {
@@ -466,17 +568,36 @@ async function cargarDetalleProducto() {
         }
         if (tallasArray.length === 0) tallasArray = ['Única'];
 
+        tallaSeleccionadaGlobal = null;
+        stockTallaSeleccionadaGlobal = null;
+        const mapaStock = obtenerMapaStockPorTalla(productoActual);
+
         const contenedorTallas = document.getElementById('contenedor-tallas');
-        contenedorTallas.innerHTML = tallasArray.map((talla, i) => {
-            const deshabilitada = agotado;
-            const esPrimera = i === 0 && !deshabilitada;
-            if (esPrimera) tallaSeleccionadaGlobal = talla;
-            return `<div class="size-box ${esPrimera ? 'selected' : ''} ${deshabilitada ? 'disabled' : ''}" onclick="seleccionarTalla('${talla}', this)">${talla}</div>`;
+        contenedorTallas.innerHTML = tallasArray.map(talla => {
+            const stockTalla = (mapaStock && mapaStock[talla] !== undefined)
+                ? Number(mapaStock[talla])
+                : (agotado ? 0 : Math.floor(stock / tallasArray.length));
+            const deshabilitada = agotado || stockTalla <= 0;
+            return `
+                <div class="size-box ${deshabilitada ? 'disabled' : ''}" 
+                     style="min-width: 82px; height: auto; padding: 6px 12px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; cursor: ${deshabilitada ? 'not-allowed' : 'pointer'};"
+                     onclick="${deshabilitada ? '' : `seleccionarTallaConStock('${talla}', ${stockTalla}, this)`}">
+                    <span class="fw-bold fs-6">${talla}</span>
+                    <small style="font-size: 11px;" class="${deshabilitada ? 'text-danger' : (stockTalla <= 3 ? 'text-warning' : 'text-muted')}">
+                        ${deshabilitada ? 'Agotada' : `${stockTalla} disp.`}
+                    </small>
+                </div>
+            `;
         }).join('');
 
-        if (agotado) {
-            document.getElementById('talla-msg').innerHTML = '<span class="text-danger fw-medium">Producto agotado temporalmente</span>';
+        const msgTalla = document.getElementById('talla-msg');
+        if (msgTalla) {
+            msgTalla.innerHTML = agotado
+                ? '<span class="text-danger fw-medium">Producto agotado temporalmente</span>'
+                : 'Ninguna seleccionada';
         }
+        const alertaStock = document.getElementById('alerta-stock-talla');
+        if (alertaStock) alertaStock.innerHTML = '';
 
         const btnAgregar = document.getElementById('btn-agregar');
         if (agotado) {
@@ -550,38 +671,43 @@ document.getElementById('btn-agregar').addEventListener('click', async () => {
         return;
     }
     if (!tallaSeleccionadaGlobal) {
-        mostrarToastDetalle('Por favor selecciona una talla antes de continuar', 'warning');
+        mostrarToastDetalle('⚠️ Por favor selecciona una Talla antes de añadir al carrito', 'warning');
+        document.getElementById('seccion-selector-talla')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
-    if (cantidadSeleccionada > stock) {
-        mostrarToastDetalle(`Solo hay ${stock} unidades disponibles. Reduce la cantidad.`, 'error');
+    if (!colorSeleccionadoGlobal) {
+        mostrarToastDetalle('⚠️ Por favor selecciona un Color antes de añadir al carrito', 'warning');
+        document.getElementById('seccion-selector-color')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
-
-    // Se permite añadir al carrito sin haber iniciado sesión previamente;
-    // el inicio de sesión se exigirá al momento de finalizar la compra (checkout).
+    const maxPermitido = stockTallaSeleccionadaGlobal !== null ? stockTallaSeleccionadaGlobal : stock;
+    if (maxPermitido <= 0) {
+        mostrarToastDetalle(`La talla ${tallaSeleccionadaGlobal} se encuentra agotada. Elige otra talla.`, 'error');
+        return;
+    }
+    if (cantidadSeleccionada > maxPermitido) {
+        mostrarToastDetalle(`Solo hay ${maxPermitido} unidades disponibles en talla ${tallaSeleccionadaGlobal}. Reduce la cantidad.`, 'error');
+        return;
+    }
 
     let carrito;
     try { carrito = JSON.parse(localStorage.getItem('carrito')) || []; } catch(e) { carrito = []; }
 
-    const nombreConTalla = tallaSeleccionadaGlobal === 'Única'
-        ? productoActual.nombre
-        : `${productoActual.nombre} (Talla: ${tallaSeleccionadaGlobal})`;
-
     const indexExistente = carrito.findIndex(item =>
         String(item.productoId) === String(productoActual.id) &&
-        (item.talla || 'Única') === (tallaSeleccionadaGlobal || 'Única')
+        String(item.talla || '') === String(tallaSeleccionadaGlobal || '') &&
+        String(item.color || '') === String(colorSeleccionadoGlobal || '')
     );
 
     let cantidadPrevia = indexExistente >= 0 ? (carrito[indexExistente].cantidad || 0) : 0;
     let nuevaCantidadTotal = cantidadPrevia + cantidadSeleccionada;
 
-    if (nuevaCantidadTotal > stock) {
-        const extra = stock - cantidadPrevia;
+    if (nuevaCantidadTotal > maxPermitido) {
+        const extra = maxPermitido - cantidadPrevia;
         if (extra <= 0) {
-            mostrarToastDetalle(`Ya tienes ${cantidadPrevia} ud. en el carrito (stock máximo = ${stock})`, 'error');
+            mostrarToastDetalle(`Ya tienes ${cantidadPrevia} ud. de esta talla y color en el carrito (máximo disponible = ${maxPermitido})`, 'error');
         } else {
-            mostrarToastDetalle(`Solo puedes añadir ${extra} ud. más (tienes ${cantidadPrevia} en carrito)`, 'warning');
+            mostrarToastDetalle(`Solo puedes añadir ${extra} ud. más en talla ${tallaSeleccionadaGlobal} (tienes ${cantidadPrevia} en carrito)`, 'warning');
         }
         return;
     }
@@ -591,10 +717,13 @@ document.getElementById('btn-agregar').addEventListener('click', async () => {
     } else {
         carrito.push({
             productoId: productoActual.id,
-            nombre: nombreConTalla,
+            nombre: productoActual.nombre,
             precioUnitario: Number(productoActual.precio),
-            talla: tallaSeleccionadaGlobal,
+            precio: Number(productoActual.precio),
+            talla: String(tallaSeleccionadaGlobal),
+            color: String(colorSeleccionadoGlobal),
             cantidad: cantidadSeleccionada,
+            stock: maxPermitido,
             imagen: productoActual.imagen || productoActual.imagenUrl || ''
         });
     }
@@ -602,7 +731,7 @@ document.getElementById('btn-agregar').addEventListener('click', async () => {
     localStorage.setItem('carrito', JSON.stringify(carrito));
     actualizarContadorCarrito();
     mostrarToastDetalle(
-        `🎉 <strong>${cantidadSeleccionada} ud.</strong> de "${productoActual.nombre}" <em>(talla ${tallaSeleccionadaGlobal})</em> añadido al carrito`,
+        `🎉 <strong>${cantidadSeleccionada} ud.</strong> de "${productoActual.nombre}" <em>(Talla: ${tallaSeleccionadaGlobal} · Color: ${colorSeleccionadoGlobal})</em> añadido al carrito 🛒`,
         'success'
     );
 

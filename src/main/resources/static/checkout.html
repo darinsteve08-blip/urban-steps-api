@@ -363,7 +363,11 @@
                         <img src="${img}" class="rounded-2" style="width:56px;height:56px;object-fit:cover;" alt="">
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-semibold small text-truncate">${it.nombre}</div>
-                            <div class="text-muted small">x${it.cantidad || 1}</div>
+                            <div class="text-muted small">
+                                <span>x${it.cantidad || 1}</span>
+                                ${it.talla ? `· <span class="badge bg-light text-dark border">Talla ${it.talla}</span>` : ''}
+                                ${it.color ? `· <span class="badge bg-light text-dark border">${it.color}</span>` : ''}
+                            </div>
                         </div>
                         <div class="fw-bold text-end small">$${Number(sub).toLocaleString()}</div>
                     </div>`;
@@ -507,7 +511,8 @@
                 productoId: it.productoId,
                 cantidad: it.cantidad || 1,
                 precioUnitario: it.precioUnitario,
-                talla: it.talla ? String(it.talla) : null
+                talla: it.talla ? String(it.talla) : null,
+                color: it.color ? String(it.color) : null
             }));
 
             const datosOrden = {
@@ -547,7 +552,7 @@
                 const NUMERO_WHATSAPP = "573138044913";
                 const totalFmt = Number(data.total || totalFinal).toLocaleString('es-CO');
 
-                const itemsStr = carrito.map(it => `• ${it.cantidad || 1}x ${it.nombre} ${it.talla ? `(Talla ${it.talla})` : ''}`).join('\n');
+                const itemsStr = carrito.map(it => `• ${it.cantidad || 1}x ${it.nombre}${it.talla ? ` (Talla ${it.talla})` : ''}${it.color ? ` (Color ${it.color})` : ''}`).join('\n');
 
                 const esManual = ['Nequi', 'Bancolombia', 'Daviplata'].includes(metodo);
 
