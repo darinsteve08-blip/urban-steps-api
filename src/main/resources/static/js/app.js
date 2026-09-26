@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalCarritoEl) {
         modalCarritoEl.addEventListener('show.bs.modal', actualizarModalCarritoMini);
     }
+
+    const modalProdEl = document.getElementById('modalAgregarProducto');
+    if (modalProdEl) {
+        modalProdEl.addEventListener('hidden.bs.modal', () => {
+            if (window.quitarFotoProductoSubida) window.quitarFotoProductoSubida();
+            const prevGal = document.getElementById('previewGaleriaAdicionales');
+            if (prevGal) prevGal.innerHTML = '';
+            const form = document.getElementById('formAgregarProducto');
+            if (form) form.reset();
+        });
+    }
 });
 
 // ==========================================
@@ -938,6 +949,157 @@ window.guardarNuevoProducto = async function(event) {
     } finally {
         if (btn) btn.disabled = false;
         if (txt) txt.innerHTML = '<i class="bi bi-save me-2"></i>Guardar en Base de Datos';
+    }
+};
+
+// ==========================================
+// SUBIDA DE FOTOS DE PRODUCTO (GALERÍA / PC)
+// ==========================================
+window.subirFotoProductoArchivo = async function(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    const spinner = document.getElementById('spinnerSubidaProducto');
+    const zonaSubida = document.getElementById('zonaSubidaFotoPrincipal');
+    const previewContainer = document.getElementById('previewNuevoProductoContainer');
+    const previewImg = document.getElementById('previewNuevoProductoImg');
+    const inputUrl = document.getElementById('nuevoImagen');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (zonaSubida) zonaSubida.classList.add('d-none');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('tipo', 'producto');
+
+    try {
+        const res = await fetch('/api/upload/imagen?tipo=producto', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (res.ok && data.url) {
+            if (inputUrl) inputUrl.value = data.url;
+            if (previewImg) previewImg.src = data.url;
+            if (previewContainer) previewContainer.classList.remove('d-none');
+            if (window.mostrarToastGlobal) {
+                window.mostrarToastGlobal('📸 Foto del zapato cargada con éxito', 'success');
+            }
+        } else {
+            throw new Error(data.error || 'Error al subir la imagen');
+        }
+    } catch (err) {
+        console.error(err);
+        if (zonaSubida) zonaSubida.classList.remove('d-none');
+        if (window.mostrarToastGlobal) {
+            window.mostrarToastGlobal('❌ ' + (err.message || 'Error al subir imagen'), 'danger');
+        } else {
+            alert('Error al subir imagen: ' + err.message);
+        }
+    } finally {
+        if (spinner) spinner.classList.add('d-none');
+        input.value = '';
+    }
+};
+
+window.quitarFotoProductoSubida = function() {
+    const previewContainer = document.getElementById('previewNuevoProductoContainer');
+    const previewImg = document.getElementById('previewNuevoProductoImg');
+    const zonaSubida = document.getElementById('zonaSubidaFotoPrincipal');
+    const inputUrl = document.getElementById('nuevoImagen');
+
+    if (previewContainer) previewContainer.classList.add('d-none');
+    if (previewImg) previewImg.src = '';
+    if (zonaSubida) zonaSubida.classList.remove('d-none');
+    if (inputUrl) inputUrl.value = '';
+};
+
+window.actualizarPreviewProductoUrl = function(url) {
+    const previewContainer = document.getElementById('previewNuevoProductoContainer');
+    const previewImg = document.getElementById('previewNuevoProductoImg');
+    const zonaSubida = document.getElementById('zonaSubidaFotoPrincipal');
+
+    if (url && url.trim().length > 10) {
+        if (previewImg) previewImg.src = url.trim();
+        if (previewContainer) previewContainer.classList.remove('d-none');
+        if (zonaSubida) zonaSubida.classList.add('d-none');
+    } else {
+        if (previewContainer) previewContainer.classList.add('d-none');
+        if (zonaSubida) zonaSubida.classList.remove('d-none');
+    }
+};
+
+window.subirFotosAdicionalesArchivo = async function(input) {
+    if (!input.files || input.files.length === 0) return;
+    const files = Array.from(input.files);
+
+    const spinner = document.getElementById('spinnerSubidaAdicionales');
+    const previewGaleria = document.getElementById('previewGaleriaAdicionales');
+    const inputNuevas = document.getElementById('nuevasImagenes');
+
+    if (spinner) spinner.classList.remove('d-none');
+
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    formData.append('tipo', 'productos');
+
+    try {
+        const res = await fetch('/api/upload/imagenes?tipo=productos', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (res.ok && data.urls && data.urls.length > 0) {
+            let urlsActuales = (inputNuevas && inputNuevas.value) ? inputNuevas.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+            urlsActuales = urlsActuales.concat(data.urls);
+            if (inputNuevas) inputNuevas.value = urlsActuales.join(', ');
+
+            if (previewGaleria) {
+                previewGaleria.innerHTML = urlsActuales.map((u, i) => `
+                    <div class="position-relative d-inline-block">
+                        <img src="${u}" class="rounded-2 border shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                        <button type="button" class="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 10px; transform: translate(30%, -30%);" onclick="quitarFotoAdicional(${i})">×</button>
+                    </div>
+                `).join('');
+            }
+
+            if (window.mostrarToastGlobal) {
+                window.mostrarToastGlobal(`📸 ${data.urls.length} fotos adicionales subidas`, 'success');
+            }
+        } else {
+            throw new Error(data.error || 'Error al subir fotos adicionales');
+        }
+    } catch (err) {
+        console.error(err);
+        if (window.mostrarToastGlobal) {
+            window.mostrarToastGlobal('❌ ' + (err.message || 'Error al subir fotos adicionales'), 'danger');
+        }
+    } finally {
+        if (spinner) spinner.classList.add('d-none');
+        input.value = '';
+    }
+};
+
+window.quitarFotoAdicional = function(idx) {
+    const inputNuevas = document.getElementById('nuevasImagenes');
+    const previewGaleria = document.getElementById('previewGaleriaAdicionales');
+    if (!inputNuevas) return;
+
+    let urls = inputNuevas.value.split(',').map(s => s.trim()).filter(Boolean);
+    urls.splice(idx, 1);
+    inputNuevas.value = urls.join(', ');
+
+    if (previewGaleria) {
+        previewGaleria.innerHTML = urls.map((u, i) => `
+            <div class="position-relative d-inline-block">
+                <img src="${u}" class="rounded-2 border shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                <button type="button" class="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 10px; transform: translate(30%, -30%);" onclick="quitarFotoAdicional(${i})">×</button>
+            </div>
+        `).join('');
     }
 };
 

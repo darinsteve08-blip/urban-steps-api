@@ -47,9 +47,9 @@ public class SecurityConfig {
                 .requestMatchers("/", "/index.html", "/login.html", "/registro.html",
                         "/carrito.html", "/checkout.html", "/pago.html",
                         "/detalle.html", "/perfil.html", "/pedidos.html", "/usuarios.html",
-                        "/js/**", "/css/**", "/img/**", "/images/**", "/*.html",
+                        "/js/**", "/css/**", "/img/**", "/images/**", "/uploads/**", "/*.html",
                         "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/upload/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/productos/*/resenas").authenticated()
