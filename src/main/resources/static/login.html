@@ -57,18 +57,69 @@
             background: linear-gradient(180deg, rgba(15, 23, 42, 0.32) 0%, rgba(9, 13, 22, 0.52) 100%);
         }
 
-        .auth-card {
-            width: 420px;
+        /* Escenario con perspectiva 3D */
+        .auth-card-scene {
+            width: 440px;
             max-width: 92vw;
+            perspective: 1400px;
+            -webkit-perspective: 1400px;
+            position: relative;
+            z-index: 10;
+            will-change: transform;
+        }
+
+        /* Contenedor que rota en 3D sobre el eje Y */
+        .auth-card-flipper {
+            position: relative;
+            width: 100%;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            transition: transform 0.85s cubic-bezier(0.34, 1.25, 0.64, 1), min-height 0.35s ease;
+        }
+
+        /* Estado volteado: rotación horizontal de 180 grados */
+        .auth-card-flipper.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Estructura común para ambas caras */
+        .auth-card {
+            width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 24px;
             box-shadow: 0 25px 65px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            overflow: hidden;
+        }
+
+        /* Cara frontal (Iniciar Sesión) */
+        .auth-card-front {
             position: relative;
-            z-index: 10;
-            will-change: transform;
+            z-index: 2;
+            transform: rotateY(0deg);
+            -webkit-transform: rotateY(0deg);
+        }
+
+        /* Cara trasera (Registrarse / Sign up) */
+        .auth-card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1;
+            transform: rotateY(180deg);
+            -webkit-transform: rotateY(180deg);
+        }
+
+        .auth-card-flipper:not(.is-flipped) .auth-card-back {
+            pointer-events: none;
+        }
+        .auth-card-flipper.is-flipped .auth-card-front {
+            pointer-events: none;
         }
 
         /* Optimización especial para teléfonos celulares */
@@ -86,10 +137,13 @@
             .login-bg-overlay {
                 background: linear-gradient(180deg, rgba(10, 15, 26, 0.22) 0%, rgba(10, 15, 26, 0.42) 100%);
             }
-            .auth-card {
+            .auth-card-scene {
                 width: 92vw;
                 max-width: 390px;
                 margin: 20px auto;
+            }
+            .auth-card {
+                width: 100%;
                 background: rgba(255, 255, 255, 0.94);
                 box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
             }
@@ -164,71 +218,149 @@
     </div>
     <div id="toast-container-login" class="toast-container-login"></div>
 
-    <div class="card auth-card p-0 overflow-hidden" id="authCard">
-        <div class="brand-logo">
-            <h2 class="fw-bold mb-1">Urban<span style="color: #FF5722;">Steps</span></h2>
-            <p class="mb-0 small opacity-75">Tu tienda de zapatos favorita</p>
-        </div>
-        <div class="p-4 pt-2">
-            <h4 class="fw-bold text-dark mb-1 text-center">Bienvenido de vuelta</h4>
-            <p class="text-muted small text-center mb-4">Inicia sesión para continuar</p>
-
-            <form onsubmit="manejarLogin(event)">
-                <div class="mb-3">
-                    <label for="email" class="form-label fw-medium small">Correo Electrónico</label>
-                    <div class="position-relative">
-                        <i class="bi bi-envelope position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
-                        <input type="email" class="form-control input-auth ps-5" id="email" placeholder="tu@correo.com" required>
-                    </div>
+    <div class="auth-card-scene" id="authCardScene">
+        <div class="auth-card-flipper" id="authCardFlipper">
+            <!-- CARA FRONTAL: INICIAR SESIÓN (LOGIN) -->
+            <div class="card auth-card auth-card-front p-0" id="authCardFront">
+                <div class="brand-logo">
+                    <h2 class="fw-bold mb-1">Urban<span style="color: #FF5722;">Steps</span></h2>
+                    <p class="mb-0 small opacity-75">Tu tienda de zapatos favorita</p>
                 </div>
+                <div class="p-4 pt-2">
+                    <h4 class="fw-bold text-dark mb-1 text-center">Bienvenido de vuelta</h4>
+                    <p class="text-muted small text-center mb-4">Inicia sesión para continuar</p>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label fw-medium small">Contraseña</label>
-                    <div class="position-relative">
-                        <i class="bi bi-lock position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
-                        <input type="password" class="form-control input-auth ps-5" id="password" placeholder="••••••" required>
-                    </div>
-                </div>
-
-                <button type="submit" id="btn-login" class="btn btn-primary-auth w-100 mb-3">
-                    <span id="btn-login-text"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión</span>
-                </button>
-
-                <div class="text-center mb-3">
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#modalRestablecerPassword" class="text-decoration-none small text-muted d-block mb-2">
-                        <i class="bi bi-key me-1"></i>¿Olvidaste tu contraseña?
-                    </a>
-                </div>
-                <div class="text-center">
-                    <a href="registro.html" class="text-decoration-none small fw-semibold" style="color: #FF5722;">
-                        ¿No tienes cuenta? <u>Regístrate gratis</u>
-                    </a>
-                </div>
-
-                <hr class="my-4">
-
-                <div class="bg-light rounded-3 p-3 mb-2">
-                    <p class="small fw-semibold text-muted mb-1 text-center">Accesos Demo 👇</p>
-                    <div class="row small text-center">
-                        <div class="col-6">
-                            <div class="fw-bold">Admin</div>
-                            <div class="text-muted">admin@urbansteps.com</div>
-                            <div class="text-muted">admin123</div>
+                    <form onsubmit="manejarLogin(event)">
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-medium small">Correo Electrónico</label>
+                            <div class="position-relative">
+                                <i class="bi bi-envelope position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                <input type="email" class="form-control input-auth ps-5" id="email" placeholder="tu@correo.com" required>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <div class="fw-bold">Cliente</div>
-                            <div class="text-muted">cliente@urbansteps.com</div>
-                            <div class="text-muted">cliente123</div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="text-center mt-3">
-                    <a href="index.html" class="text-decoration-none text-muted small fw-medium">
-                        <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
-                    </a>
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-medium small">Contraseña</label>
+                            <div class="position-relative">
+                                <i class="bi bi-lock position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                <input type="password" class="form-control input-auth ps-5" id="password" placeholder="••••••" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-login" class="btn btn-primary-auth w-100 mb-3">
+                            <span id="btn-login-text"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión</span>
+                        </button>
+
+                        <div class="text-center mb-2">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#modalRestablecerPassword" class="text-decoration-none small text-muted d-block">
+                                <i class="bi bi-key me-1"></i>¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+                        <div class="text-center mb-3">
+                            <small class="text-muted">¿No tienes cuenta? </small>
+                            <a href="javascript:void(0)" onclick="voltearARegistro()" class="text-decoration-none small fw-bold" style="color: #FF5722;">
+                                <u>Regístrate gratis (Sign up)</u> <i class="bi bi-arrow-right-circle ms-1"></i>
+                            </a>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="bg-light rounded-3 p-3 mb-2">
+                            <p class="small fw-semibold text-muted mb-1 text-center">Accesos Demo 👇</p>
+                            <div class="row small text-center">
+                                <div class="col-6">
+                                    <div class="fw-bold">Admin</div>
+                                    <div class="text-muted">admin@urbansteps.com</div>
+                                    <div class="text-muted">admin123</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="fw-bold">Cliente</div>
+                                    <div class="text-muted">cliente@urbansteps.com</div>
+                                    <div class="text-muted">cliente123</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <a href="index.html" class="text-decoration-none text-muted small fw-medium">
+                                <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
+                            </a>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+
+            <!-- CARA TRASERA: REGISTRARSE (SIGN UP) -->
+            <div class="card auth-card auth-card-back p-0" id="authCardBack">
+                <div class="brand-logo" style="background: linear-gradient(135deg, #111827 0%, #FF5722 140%);">
+                    <h2 class="fw-bold mb-1">Urban<span style="color: #fff;">Steps</span></h2>
+                    <p class="mb-0 small opacity-90">Crea tu cuenta gratis 🎉</p>
+                </div>
+                <div class="p-4 pt-2">
+                    <h4 class="fw-bold text-dark mb-1 text-center">Únete a Urban Steps</h4>
+                    <p class="text-muted small text-center mb-3">Regístrate para comprar tus sneakers favoritos</p>
+
+                    <form id="formRegistro" onsubmit="manejarRegistro(event)">
+                        <div class="mb-3">
+                            <label for="nombreReg" class="form-label fw-medium small">Nombre Completo</label>
+                            <div class="position-relative">
+                                <i class="bi bi-person position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                <input type="text" class="form-control input-auth ps-5" id="nombreReg" placeholder="Tu nombre completo" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="emailReg" class="form-label fw-medium small">Correo Electrónico</label>
+                            <div class="position-relative">
+                                <i class="bi bi-envelope position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                <input type="email" class="form-control input-auth ps-5" id="emailReg" placeholder="tu@correo.com" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="passwordReg" class="form-label fw-medium small">Contraseña</label>
+                            <div class="position-relative">
+                                <i class="bi bi-lock position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                <input type="password" class="form-control input-auth ps-5" id="passwordReg" placeholder="Mínimo 4 caracteres" minlength="4" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="telefonoReg" class="form-label fw-medium small">Teléfono <span class="text-muted" style="font-size: 11px;">(opcional)</span></label>
+                                <div class="position-relative">
+                                    <i class="bi bi-telephone position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                    <input type="tel" class="form-control input-auth ps-5" id="telefonoReg" placeholder="+57 300...">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label for="direccionReg" class="form-label fw-medium small">Dirección <span class="text-muted" style="font-size: 11px;">(opcional)</span></label>
+                                <div class="position-relative">
+                                    <i class="bi bi-geo-alt position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                    <input type="text" class="form-control input-auth ps-5" id="direccionReg" placeholder="Dirección">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-registro" class="btn btn-primary-auth w-100 mb-3" style="background: linear-gradient(135deg, #FF5722, #ff8a65);">
+                            <span id="btn-registro-text"><i class="bi bi-person-plus me-2"></i>Crear Cuenta (Sign up)</span>
+                        </button>
+
+                        <div class="text-center mb-2">
+                            <small class="text-muted">¿Ya tienes cuenta? </small>
+                            <a href="javascript:void(0)" onclick="voltearALogin()" class="text-decoration-none small fw-bold" style="color: #FF5722;">
+                                <u>Inicia sesión (Sign in)</u> <i class="bi bi-arrow-left-circle ms-1"></i>
+                            </a>
+                        </div>
+
+                        <div class="text-center mt-2">
+                            <a href="index.html" class="text-decoration-none text-muted small fw-medium">
+                                <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -346,13 +478,120 @@
             mostrarToastLogin('No se pudo conectar con el servidor.', 'error');
         }
     }
+
+    // --- LÓGICA DE REGISTRO Y VOLTEO 3D (3D FLIP CARD) ---
+    function sincronizarAlturaCard() {
+        const flipper = document.getElementById('authCardFlipper');
+        const front = document.getElementById('authCardFront');
+        const back = document.getElementById('authCardBack');
+        if (!flipper || !front || !back) return;
+        const isFlipped = flipper.classList.contains('is-flipped');
+        const altura = isFlipped ? back.offsetHeight : front.offsetHeight;
+        if (altura > 0) {
+            flipper.style.minHeight = altura + 'px';
+        }
+    }
+
+    function voltearARegistro() {
+        const flipper = document.getElementById('authCardFlipper');
+        const back = document.getElementById('authCardBack');
+        if (!flipper) return;
+        if (back && back.offsetHeight > 0) {
+            flipper.style.minHeight = back.offsetHeight + 'px';
+        }
+        flipper.classList.add('is-flipped');
+        setTimeout(() => {
+            const firstInput = document.getElementById('nombreReg');
+            if (firstInput) firstInput.focus();
+        }, 500);
+    }
+
+    function voltearALogin() {
+        const flipper = document.getElementById('authCardFlipper');
+        const front = document.getElementById('authCardFront');
+        if (!flipper) return;
+        if (front && front.offsetHeight > 0) {
+            flipper.style.minHeight = front.offsetHeight + 'px';
+        }
+        flipper.classList.remove('is-flipped');
+        setTimeout(() => {
+            const firstInput = document.getElementById('email');
+            if (firstInput) firstInput.focus();
+        }, 500);
+    }
+
+    window.addEventListener('resize', sincronizarAlturaCard);
+    window.addEventListener('DOMContentLoaded', () => {
+        sincronizarAlturaCard();
+        // Si se recibe el parámetro action=register o hash #registro, rotar automáticamente
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('action') === 'register' || params.get('signup') || params.get('registro') || window.location.hash === '#registro') {
+            voltearARegistro();
+        }
+    });
+
+    async function manejarRegistro(event) {
+        event.preventDefault();
+        const nombre = document.getElementById('nombreReg').value.trim();
+        const email = document.getElementById('emailReg').value.trim();
+        const password = document.getElementById('passwordReg').value;
+        const telefono = document.getElementById('telefonoReg').value.trim();
+        const direccion = document.getElementById('direccionReg').value.trim();
+
+        const btn = document.getElementById('btn-registro');
+        const txt = document.getElementById('btn-registro-text');
+        btn.disabled = true;
+        txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando cuenta...';
+
+        try {
+            const respuesta = await fetch('/api/auth/registro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre, email, password,
+                    rol: 'ROLE_CLIENTE',
+                    telefono, direccion
+                })
+            });
+
+            const textoRespuesta = await respuesta.text();
+
+            if (respuesta.ok) {
+                mostrarToastLogin('¡Cuenta creada con éxito! 🎉 Volteando a Iniciar Sesión...', 'success');
+                // Prellenar el correo en el formulario de login para facilitarle al usuario
+                document.getElementById('email').value = email;
+                document.getElementById('password').value = '';
+                document.getElementById('formRegistro').reset();
+                setTimeout(() => {
+                    voltearALogin();
+                }, 1300);
+            } else {
+                let msg = 'Error al registrar la cuenta.';
+                if (textoRespuesta) {
+                    try {
+                        const data = JSON.parse(textoRespuesta);
+                        msg = data.message || data.mensaje || msg;
+                    } catch (e) {
+                        msg = textoRespuesta;
+                    }
+                }
+                mostrarToastLogin(msg, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            mostrarToastLogin('No se pudo conectar con el servidor para registrarte.', 'error');
+        } finally {
+            btn.disabled = false;
+            txt.innerHTML = '<i class="bi bi-person-plus me-2"></i>Crear Cuenta (Sign up)';
+        }
+    }
 </script>
 <script>
     // Efecto interactivo con la ruedita del mouse (mouse wheel) y desplazamiento táctil
     (function initParallaxRuedita() {
-        const authCard = document.getElementById('authCard');
+        const authCardScene = document.getElementById('authCardScene') || document.querySelector('.auth-card-scene');
         const loginBgImg = document.getElementById('loginBgImg');
-        if (!authCard || !loginBgImg) return;
+        if (!authCardScene || !loginBgImg) return;
 
         let targetWheelY = 0;
         let currentWheelY = 0;
@@ -395,11 +634,11 @@
             currentWheelY += (targetWheelY - currentWheelY) * 0.1;
             const scrollY = window.scrollY || window.pageYOffset || 0;
 
-            // La tarjeta de login y la imagen de fondo se corren armónicamente juntas
+            // La escena y el fondo se corren armónicamente juntos con la ruedita
             const cardY = (-currentWheelY * 0.35);
             const bgY = (-currentWheelY * 0.65) - (scrollY * 0.4);
 
-            authCard.style.transform = `translate3d(0, ${cardY.toFixed(2)}px, 0)`;
+            authCardScene.style.transform = `translate3d(0, ${cardY.toFixed(2)}px, 0)`;
             loginBgImg.style.transform = `scale(1.15) translate3d(0, ${bgY.toFixed(2)}px, 0)`;
 
             requestAnimationFrame(renderMotion);
