@@ -2,7 +2,7 @@
     --bg-primary: #F9F9FB;
     --bg-card: #FFFFFF;
     --text-main: #111111;
-    --text-muted: #6B7280;
+    --text-muted: #475569;
     --accent: #FF5722;
     --accent-dark: #E64A19;
     --danger: #DC3545;
@@ -130,21 +130,55 @@ h1, h2, h3, h4, h5, h6, .fw-bold, .fw-semibold {
     cursor: not-allowed;
 }
 
-/* ---------- Botones Categoría ---------- */
+/* ---------- Botones Categoría y Filtros con Alto Contraste (WCAG AA) ---------- */
 #botones-categorias .btn {
     transition: var(--transition);
-    border: 1.5px solid transparent;
+    border: 2px solid #334155 !important;
+    color: #0f172a !important;
+    background: #ffffff;
+    font-weight: 700 !important;
 }
 
 #botones-categorias .btn:hover:not(.active) {
-    background: rgba(33,37,41,0.06);
-    border-color: rgba(33,37,41,0.2);
+    background: #f1f5f9 !important;
+    border-color: #0f172a !important;
+    color: #000000 !important;
+    transform: translateY(-1px);
 }
 
 #botones-categorias .btn.active {
-    background: var(--dark);
-    border-color: var(--dark);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+
+.btn-outline-dark {
+    border: 2px solid #334155 !important;
+    color: #0f172a !important;
+    font-weight: 600;
+}
+
+.btn-outline-dark:hover {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+}
+
+.btn-outline-secondary {
+    border: 2px solid #64748b !important;
+    color: #1e293b !important;
+    font-weight: 600;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #334155 !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+}
+
+.text-muted {
+    color: #475569 !important;
 }
 
 /* ---------- Badges ---------- */

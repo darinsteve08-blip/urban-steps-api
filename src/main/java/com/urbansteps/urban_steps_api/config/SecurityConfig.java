@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/api/upload/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/productos/*/resenas").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/productos/*/resenas").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/api/resenas/**").authenticated()
 
                 // 2. SE AGREGA OPERARIO Y ROLE_OPERARIO A LOS PERMISOS DE GESTIÓN

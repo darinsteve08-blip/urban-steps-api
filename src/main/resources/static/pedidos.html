@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .stat-card { border: none; border-radius: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
@@ -140,9 +141,14 @@
                 </h2>
                 <p class="text-muted mb-0" id="subtituloPagina">Historial y estado de tus compras en tiempo real</p>
             </div>
-            <button id="btnExportarPDF" class="btn btn-danger fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarPDF()">
-                <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
-            </button>
+            <div class="d-flex gap-2 flex-wrap" id="contenedor-exportar">
+                <button id="btnExportarExcel" class="btn btn-success fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarExcel()">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Exportar Excel (.xlsx)
+                </button>
+                <button id="btnExportarPDF" class="btn btn-danger fw-semibold rounded-pill px-4 shadow-sm" onclick="exportarPDF()">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF
+                </button>
+            </div>
         </div>
 
         <!-- Tarjetas de Métricas -->
@@ -515,6 +521,8 @@
             const subtitulo = document.getElementById('subtituloPagina');
             const grafico = document.getElementById('contenedorGrafico');
             const btnPdf = document.getElementById('btnExportarPDF');
+            const btnExcel = document.getElementById('btnExportarExcel');
+            const contExportar = document.getElementById('contenedor-exportar');
 
             if (esUsuarioAdmin) {
                 const btnNavUsuarios = document.getElementById('btnNavUsuarios');
@@ -525,7 +533,9 @@
                 titulo.innerHTML = '<i class="bi bi-receipt-cutoff me-2" style="color:#FF5722;"></i>Gestión Integral de Pedidos';
                 subtitulo.textContent = 'Panel operativo: cambio de estado rápido, transportadoras y asignación de guías';
                 if (grafico) grafico.style.display = 'block';
+                if (contExportar) contExportar.style.display = 'flex';
                 if (btnPdf) btnPdf.style.display = 'inline-block';
+                if (btnExcel) btnExcel.style.display = 'inline-block';
 
                 document.getElementById('label-stat-1').textContent = 'Total Pedidos Tienda';
                 document.getElementById('label-stat-2').textContent = 'Ventas Totales';
@@ -548,7 +558,9 @@
                 titulo.innerHTML = '<i class="bi bi-box2-heart me-2" style="color:#FF5722;"></i>Mis Pedidos & Rastreo';
                 subtitulo.textContent = 'Rastrea tus zapatillas en tiempo real y revisa tus comprobantes';
                 if (grafico) grafico.style.display = 'none';
+                if (contExportar) contExportar.style.display = 'none';
                 if (btnPdf) btnPdf.style.display = 'none';
+                if (btnExcel) btnExcel.style.display = 'none';
 
                 document.getElementById('label-stat-1').textContent = 'Mis Pedidos';
                 document.getElementById('label-stat-2').textContent = 'Total Comprado';
@@ -1071,6 +1083,56 @@
                 const activos = lista.filter(p => ['PENDIENTE', 'PAGADO', 'EN_PREPARACION', 'EN_CAMINO'].includes(p.estado)).length;
                 document.getElementById('stat-promedio').innerText = activos;
             }
+        }
+
+        function exportarExcel() {
+            if (!todosLosPedidos || todosLosPedidos.length === 0) {
+                mostrarToast('No hay pedidos para exportar.', 'error');
+                return;
+            }
+            if (typeof XLSX === 'undefined') {
+                mostrarToast('Cargando librería Excel... Por favor intenta en un segundo.', 'warning');
+                return;
+            }
+
+            const ahora = new Date();
+            const filas = todosLosPedidos.map(p => ({
+                "ID Pedido": p.id,
+                "Cliente": p.nombreCliente || '',
+                "Email": p.emailCliente || '',
+                "Teléfono": p.telefono || '',
+                "Ciudad": p.ciudad || '',
+                "Dirección": p.direccion || '',
+                "Fecha": fmtFecha(p.fechaCreacion || p.fecha),
+                "Total (COP)": Number(p.total || 0),
+                "Estado": p.estado || '',
+                "Método de Pago": p.metodoPago || '',
+                "Transportadora": p.transportadora || 'N/A',
+                "Número de Guía": p.numeroGuia || 'N/A'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(filas);
+            worksheet['!cols'] = [
+                { wch: 10 }, // ID
+                { wch: 26 }, // Cliente
+                { wch: 28 }, // Email
+                { wch: 16 }, // Teléfono
+                { wch: 18 }, // Ciudad
+                { wch: 32 }, // Dirección
+                { wch: 20 }, // Fecha
+                { wch: 15 }, // Total
+                { wch: 16 }, // Estado
+                { wch: 16 }, // Método
+                { wch: 18 }, // Transportadora
+                { wch: 18 }  // Guía
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Pedidos");
+
+            const fechaStr = ahora.toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `Pedidos_UrbanSteps_${fechaStr}.xlsx`);
+            mostrarToast('Archivo Excel (.xlsx) exportado con éxito.', 'success');
         }
 
         function exportarPDF() {

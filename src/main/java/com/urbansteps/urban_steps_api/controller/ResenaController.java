@@ -63,10 +63,6 @@ public class ResenaController {
     public ResponseEntity<?> guardarResena(@PathVariable Long productoId,
                                            @RequestBody Map<String, Object> body,
                                            Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Debes iniciar sesión para calificar este producto.");
-        }
-
         Optional<Producto> prodOpt = productoRepository.findById(productoId);
         if (prodOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado.");
@@ -91,11 +87,21 @@ public class ResenaController {
             return ResponseEntity.badRequest().body("El comentario no puede exceder 1000 caracteres.");
         }
 
-        String email = principal.getName();
-        String nombre = email.split("@")[0];
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
-        if (usuarioOpt.isPresent() && usuarioOpt.get().getNombre() != null && !usuarioOpt.get().getNombre().isBlank()) {
-            nombre = usuarioOpt.get().getNombre();
+        String email;
+        String nombre;
+
+        if (principal != null) {
+            email = principal.getName();
+            nombre = email.split("@")[0];
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+            if (usuarioOpt.isPresent() && usuarioOpt.get().getNombre() != null && !usuarioOpt.get().getNombre().isBlank()) {
+                nombre = usuarioOpt.get().getNombre();
+            }
+        } else {
+            String bNombre = body.get("nombre") != null ? String.valueOf(body.get("nombre")).trim() : "";
+            String bEmail = body.get("email") != null ? String.valueOf(body.get("email")).trim() : "";
+            nombre = !bNombre.isBlank() ? bNombre : "Cliente Urban";
+            email = !bEmail.isBlank() ? bEmail : ("invitado_" + UUID.randomUUID().toString().substring(0, 8) + "@urbansteps.com");
         }
 
         // Si el usuario ya había opinado para este producto, actualizamos su reseña

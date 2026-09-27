@@ -150,15 +150,30 @@
 
             if (carrito.length === 0) {
                 contenedor.innerHTML = `
-                    <div class="card p-5 text-center bg-white shadow-sm border-0 rounded-4">
-                        <div class="mb-3">
-                            <i class="bi bi-cart-x text-muted" style="font-size:72px;"></i>
+                    <div class="card p-5 text-center bg-white shadow-sm border-0 rounded-4 my-2">
+                        <div class="mb-4">
+                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 100px; height: 100px; background: rgba(255, 87, 34, 0.1);">
+                                <i class="bi bi-cart-x" style="font-size: 52px; color: #FF5722;"></i>
+                            </div>
                         </div>
-                        <h4 class="fw-bold mb-2">Tu carrito está vacío</h4>
-                        <p class="text-muted mb-4">Explora nuestro catálogo y descubre las mejores zapatillas.</p>
-                        <a href="index.html" class="btn btn-dark rounded-pill px-5 py-2 fw-bold">
-                            <i class="bi bi-bag me-2"></i>Ir al Catálogo
-                        </a>
+                        <h3 class="fw-bold mb-2" style="font-family: 'Poppins', sans-serif;">¡Tu carrito está esperando!</h3>
+                        <p class="text-muted mb-4 mx-auto" style="max-width: 480px; font-size: 1.05rem;">
+                            Aún no has agregado ningún modelo. Descubre nuestra colección exclusiva de zapatillas urbanas, deportivas y ediciones especiales.
+                        </p>
+                        <div class="mb-4">
+                            <a href="index.html#catalogo" class="btn btn-lg rounded-pill px-5 py-3 fw-bold text-white shadow-lg d-inline-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #FF5722 0%, #ff8a65 100%); font-size: 1.15rem; border: none; letter-spacing: 0.3px; transition: all 0.25s ease;" onmouseover="this.style.transform='scale(1.04)'; this.style.boxShadow='0 12px 28px rgba(255,87,34,0.45)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 20px rgba(255,87,34,0.3)';" id="btn-comenzar-compras">
+                                <i class="bi bi-fire fs-4 me-2"></i> ¡Empieza a comprar ahora!
+                            </a>
+                        </div>
+                        <div class="pt-3 border-top mt-2">
+                            <small class="text-muted fw-semibold d-block mb-2">Categorías más buscadas:</small>
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <a href="index.html?cat=Urbana#catalogo" class="badge bg-light text-dark border px-3 py-2 text-decoration-none rounded-pill">🏙️ Urbanas</a>
+                                <a href="index.html?cat=Deportiva#catalogo" class="badge bg-light text-dark border px-3 py-2 text-decoration-none rounded-pill">⚽ Deportivas</a>
+                                <a href="index.html?cat=Running#catalogo" class="badge bg-light text-dark border px-3 py-2 text-decoration-none rounded-pill">🏃 Running</a>
+                                <a href="index.html?cat=Edicion Especial#catalogo" class="badge bg-light text-dark border px-3 py-2 text-decoration-none rounded-pill">👑 Especiales</a>
+                            </div>
+                        </div>
                     </div>`;
                 document.getElementById('recomendaciones').classList.add('d-none');
                 actualizarResumen();

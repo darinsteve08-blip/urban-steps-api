@@ -737,6 +737,15 @@ function agregarAlCarritoRapido(info) {
 window.agregarAlCarritoRapido = agregarAlCarritoRapido;
 
 window.verDetalle = function(id) {
+    try {
+        if (window.productosGlobal && Array.isArray(window.productosGlobal)) {
+            const prod = window.productosGlobal.find(p => p.id === id);
+            if (prod) {
+                sessionStorage.setItem('producto_actual_' + id, JSON.stringify(prod));
+                sessionStorage.setItem('ultimo_producto_visto', JSON.stringify(prod));
+            }
+        }
+    } catch (e) {}
     window.location.href = `detalle.html?id=${id}`;
 };
 
@@ -807,32 +816,49 @@ window.finalizarCompra = finalizarCompra;
 // ==========================================
 // TOASTS Y NOTIFICACIONES
 // ==========================================
-window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 3200) {
+window.mostrarToastGlobal = function(mensaje, tipo = 'success', duracionMs = 4000) {
     let contenedor = document.getElementById('toastContainerUrban');
     if (!contenedor) {
         contenedor = document.createElement('div');
         contenedor.id = 'toastContainerUrban';
-        contenedor.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+        contenedor.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:12px;pointer-events:none;';
         document.body.appendChild(contenedor);
     }
     const colores = {
-        success: 'linear-gradient(135deg,#198754,#146c43)',
-        danger:  'linear-gradient(135deg,#dc3545,#b02a37)',
-        warning: 'linear-gradient(135deg,#ffc107,#cc9a06)',
-        info:    'linear-gradient(135deg,#0d6efd,#0a58ca)',
-        dark:    'linear-gradient(135deg,#212529,#111)'
+        success: 'linear-gradient(135deg, #16a34a, #22c55e)',
+        danger:  'linear-gradient(135deg, #dc2626, #ef4444)',
+        error:   'linear-gradient(135deg, #dc2626, #ef4444)',
+        warning: 'linear-gradient(135deg, #d97706, #f59e0b)',
+        info:    'linear-gradient(135deg, #2563eb, #3b82f6)',
+        dark:    'linear-gradient(135deg, #1f2937, #111827)'
     };
+    const iconos = {
+        success: 'check-circle-fill',
+        danger:  'exclamation-triangle-fill',
+        error:   'exclamation-triangle-fill',
+        warning: 'exclamation-circle-fill',
+        info:    'info-circle-fill',
+        dark:    'bell-fill'
+    };
+    const toastId = 'toast-urban-' + Date.now();
     const toast = document.createElement('div');
-    toast.style.cssText = `min-width:280px;max-width:380px;padding:14px 18px;border-radius:12px;color:#fff;
-        font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);
-        background:${colores[tipo] ?? colores.success};pointer-events:auto;
-        transform:translateX(420px);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;gap:10px;`;
-    toast.innerHTML = `<i class="bi bi-${tipo === 'success' ? 'check-circle-fill' : tipo === 'danger' ? 'exclamation-triangle-fill' : tipo === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill'}" style="font-size:18px;"></i><span style="flex:1;">${mensaje}</span>`;
+    toast.id = toastId;
+    toast.style.cssText = `min-width:300px;max-width:420px;padding:14px 20px;border-radius:14px;color:#fff;
+        font-family:'Poppins',sans-serif;font-weight:500;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,0.2);
+        background:${colores[tipo] || colores.success};pointer-events:auto;
+        transform:translateX(120%);transition:transform 0.35s ease;display:flex;align-items:center;gap:12px;`;
+    toast.innerHTML = `
+        <i class="bi bi-${iconos[tipo] || 'check-circle-fill'}" style="font-size:20px;flex-shrink:0;"></i>
+        <div style="flex:1;line-height:1.4;">${mensaje}</div>
+        <button onclick="const t = document.getElementById('${toastId}'); if(t){ t.style.transform='translateX(120%)'; setTimeout(()=>t.remove(),350); }" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;opacity:0.85;">×</button>
+    `;
     contenedor.appendChild(toast);
     requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; });
     setTimeout(() => {
-        toast.style.transform = 'translateX(420px)';
-        setTimeout(() => toast.remove(), 400);
+        if (toast.parentNode) {
+            toast.style.transform = 'translateX(120%)';
+            setTimeout(() => toast.remove(), 400);
+        }
     }, duracionMs);
 };
 
