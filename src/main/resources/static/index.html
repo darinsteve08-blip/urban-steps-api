@@ -45,9 +45,9 @@
                         <i class="bi bi-box-arrow-right me-1"></i> Salir
                     </button>
                     
-                    <button class="btn btn-dark text-white btn-sm position-relative border-secondary" data-bs-toggle="modal" data-bs-target="#modalCarrito">
+                    <a href="carrito.html" class="btn btn-dark text-white btn-sm position-relative border-secondary" id="btnCarritoNav">
                         <i class="bi bi-cart3 me-1"></i> Carrito (<span id="contador-carrito" class="fw-bold">0</span>)
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -557,26 +557,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalCarrito" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">Carrito de Compras</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="cuerpo-carrito-tienda">
-                    <p class="text-muted text-center py-2">El carrito está vacío.</p>
-                </div>
-                <div class="modal-footer flex-column">
-                    <div class="d-flex justify-content-between w-100 mb-2">
-                        <span class="fw-bold">Total:</span>
-                        <span class="fw-bold text-danger">$<span id="carrito-total-tienda">0</span> COP</span>
-                    </div>
-                    <a href="carrito.html" class="btn btn-dark w-100 rounded-pill fw-bold">Ir al Carrito y Pagar</a>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
         <div id="toastIndex" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
