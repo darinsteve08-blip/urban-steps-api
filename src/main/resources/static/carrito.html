@@ -66,7 +66,7 @@
                     </div>
 
                     <div class="d-flex justify-content-between mb-2 small">
-                        <span class="text-muted">Subtotal ({{items}} items)</span>
+                        <span class="text-muted" id="label-subtotal-resumen">Subtotal</span>
                         <span id="subtotal-pagar" class="fw-semibold">$0 COP</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2 small">
@@ -131,6 +131,12 @@
             const items = carrito.reduce((s, i) => s + Number(i.cantidad || 1), 0);
 
             document.getElementById('contador-items-carrito').textContent = `${items} ${items === 1 ? 'artículo' : 'artículos'}`;
+            const labelSubtotal = document.getElementById('label-subtotal-resumen');
+            if (labelSubtotal) {
+                labelSubtotal.textContent = items > 0 
+                    ? `Subtotal (${items} ${items === 1 ? 'producto' : 'productos'})`
+                    : 'Subtotal';
+            }
             document.getElementById('subtotal-pagar').textContent = `$${Number(subtotal).toLocaleString()} COP`;
             document.getElementById('envio-pagar').innerHTML = envio === 0
                 ? `<span class="text-success fw-bold"><i class="bi bi-truck me-1"></i>GRATIS</span>`
