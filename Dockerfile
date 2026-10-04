@@ -14,6 +14,7 @@ COPY --from=build /app/target/*.jar app.jar
 
 # Exponemos el puerto que usará la aplicación
 EXPOSE 8080
+ENV PORT=8080
 
-# Forzamos opcionalmente el perfil prod o dejamos que la variable de entorno lo maneje
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# Forzamos perfil prod, vinculación a 0.0.0.0 y puerto dinámico para Render
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -Dserver.address=0.0.0.0 -Dspring.profiles.active=prod -jar app.jar"]
