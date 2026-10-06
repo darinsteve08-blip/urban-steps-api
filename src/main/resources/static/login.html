@@ -37,18 +37,16 @@
         }
         .login-bg-img {
             position: absolute;
-            top: -100px;
-            left: -50px;
-            right: -50px;
-            bottom: -100px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: url('https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=1920&q=80');
             background-position: center 35%;
             background-size: cover;
             background-repeat: no-repeat;
             -webkit-filter: blur(6px) brightness(0.82) saturate(1.2);
             filter: blur(6px) brightness(0.82) saturate(1.2);
-            transform: scale(1.15) translate3d(0, 0, 0);
-            will-change: transform;
             pointer-events: none;
         }
         .login-bg-overlay {
@@ -144,12 +142,11 @@
             .login-bg-img {
                 -webkit-filter: blur(4px) brightness(0.88) saturate(1.28);
                 filter: blur(4px) brightness(0.88) saturate(1.28);
-                background-position: center 28%;
-                top: -80px;
-                left: -30px;
-                right: -30px;
-                bottom: -80px;
-                transform: scale(1.15) translate3d(0, 0, 0);
+                background-position: center;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
             }
             .login-bg-overlay {
                 background: linear-gradient(180deg, rgba(10, 15, 26, 0.22) 0%, rgba(10, 15, 26, 0.42) 100%);
@@ -612,66 +609,6 @@
         }
     }
 </script>
-<script>
-    // Efecto interactivo con la ruedita del mouse (mouse wheel) y desplazamiento táctil
-    (function initParallaxRuedita() {
-        const authCardScene = document.getElementById('authCardScene') || document.querySelector('.auth-card-scene');
-        const loginBgImg = document.getElementById('loginBgImg');
-        if (!authCardScene || !loginBgImg) return;
 
-        let targetWheelY = 0;
-        let currentWheelY = 0;
-        let touchStartY = null;
-
-        // Escuchar movimiento de la ruedita del mouse
-        window.addEventListener('wheel', (e) => {
-            // No intervenir si hay una ventana modal abierta (ej: recuperar contraseña)
-            if (document.querySelector('.modal.show')) return;
-
-            targetWheelY += e.deltaY * 0.45;
-            // Rango seguro de desplazamiento para mantener armonía visual
-            targetWheelY = Math.max(-200, Math.min(200, targetWheelY));
-        }, { passive: true });
-
-        // Soportar también arrastre táctil en móviles
-        window.addEventListener('touchstart', (e) => {
-            if (e.touches && e.touches.length > 0) {
-                touchStartY = e.touches[0].clientY;
-            }
-        }, { passive: true });
-
-        window.addEventListener('touchmove', (e) => {
-            if (document.querySelector('.modal.show')) return;
-            if (touchStartY !== null && e.touches && e.touches.length > 0) {
-                const currentY = e.touches[0].clientY;
-                const deltaY = (touchStartY - currentY) * 0.7;
-                targetWheelY += deltaY;
-                targetWheelY = Math.max(-200, Math.min(200, targetWheelY));
-                touchStartY = currentY;
-            }
-        }, { passive: true });
-
-        window.addEventListener('touchend', () => {
-            touchStartY = null;
-        }, { passive: true });
-
-        // Animación suave a 60/120 fps con aceleración GPU e interpolación (lerp)
-        function renderMotion() {
-            currentWheelY += (targetWheelY - currentWheelY) * 0.1;
-            const scrollY = window.scrollY || window.pageYOffset || 0;
-
-            // La escena y el fondo se corren armónicamente juntos con la ruedita
-            const cardY = (-currentWheelY * 0.35);
-            const bgY = (-currentWheelY * 0.65) - (scrollY * 0.4);
-
-            authCardScene.style.transform = `translate3d(0, ${cardY.toFixed(2)}px, 0)`;
-            loginBgImg.style.transform = `scale(1.15) translate3d(0, ${bgY.toFixed(2)}px, 0)`;
-
-            requestAnimationFrame(renderMotion);
-        }
-
-        requestAnimationFrame(renderMotion);
-    })();
-</script>
 </body>
 </html>
