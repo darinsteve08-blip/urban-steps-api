@@ -216,11 +216,12 @@
         <div class="modal-dialog">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold">Registrar Nueva Zapatilla</h5>
+                    <h5 class="modal-title fw-bold" id="modalProductoTitulo">Registrar Nueva Zapatilla</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formAgregarProducto" onsubmit="guardarNuevoProducto(event)">
+                        <input type="hidden" id="editarProductoId" value="">
                         <div class="mb-3">
                             <label class="form-label fw-bold small">Nombre del Producto:</label>
                             <input type="text" id="nuevoNombre" class="form-control" placeholder="Ej. Nike Air Force 1" required>
@@ -600,9 +601,6 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column">
-            <div class="mb-3 px-2">
-                <span class="badge bg-secondary w-100 py-2 text-uppercase rounded-pill" id="sidebar-rol">CLIENTE</span>
-            </div>
             <ul class="list-unstyled flex-grow-1" id="sidebar-lista-enlaces">
                 <!-- JS inyectará aquí los enlaces -->
             </ul>

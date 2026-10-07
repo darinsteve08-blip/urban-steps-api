@@ -141,7 +141,10 @@ function verificarAccesoAdminUI() {
 // Función para verificar permiso de administrador y abrir el modal de nuevo producto
 window.verificarAccesoAdmin = function(event) {
     if (event) event.preventDefault();
+    window.abrirModalNuevoProducto();
+};
 
+window.abrirModalNuevoProducto = function() {
     const usuario = obtenerUsuarioSesion() || window.usuarioActual;
     const rol = (usuario?.rol || '').toUpperCase();
     const esAdmin = rol === 'ADMIN' || rol === 'ROLE_ADMIN' || rol === 'OPERARIO' || rol === 'ROLE_OPERARIO' || window.usuarioEsAdminGlobal;
@@ -152,6 +155,116 @@ window.verificarAccesoAdmin = function(event) {
         return;
     }
 
+    const editIdInput = document.getElementById('editarProductoId');
+    if (editIdInput) editIdInput.value = '';
+
+    const modalTitulo = document.getElementById('modalProductoTitulo');
+    if (modalTitulo) modalTitulo.innerHTML = 'Registrar Nueva Zapatilla';
+
+    const btnTxt = document.getElementById('btn-guardar-texto');
+    if (btnTxt) btnTxt.innerHTML = '<i class="bi bi-save me-2"></i>Guardar en Base de Datos';
+
+    const form = document.getElementById('formAgregarProducto');
+    if (form) form.reset();
+
+    if (typeof quitarFotoProductoSubida === 'function') quitarFotoProductoSubida();
+    const galeria = document.getElementById('previewGaleriaAdicionales');
+    if (galeria) galeria.innerHTML = '';
+
+    document.querySelectorAll('.check-talla, .check-color').forEach(cb => { cb.checked = false; });
+
+    const modalEl = document.getElementById('modalAgregarProducto');
+    if (modalEl) {
+        if (window.bootstrap && bootstrap.Modal) {
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        } else {
+            modalEl.style.display = 'block';
+            modalEl.classList.add('show');
+        }
+    }
+};
+
+window.abrirModalEditarProducto = function(id) {
+    const usuario = obtenerUsuarioSesion() || window.usuarioActual;
+    const rol = (usuario?.rol || '').toUpperCase();
+    const esAdmin = rol === 'ADMIN' || rol === 'ROLE_ADMIN' || rol === 'OPERARIO' || rol === 'ROLE_OPERARIO' || window.usuarioEsAdminGlobal;
+
+    if (!esAdmin) {
+        alert('Debes iniciar sesión como Administrador para editar productos.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const producto = (window.productosGlobal || []).find(p => Number(p.id) === Number(id));
+    if (!producto) {
+        alert('No se encontró la información del producto a editar.');
+        return;
+    }
+
+    // Configurar modo edición
+    const editIdInput = document.getElementById('editarProductoId');
+    if (editIdInput) editIdInput.value = producto.id;
+
+    const modalTitulo = document.getElementById('modalProductoTitulo');
+    if (modalTitulo) modalTitulo.innerHTML = `<i class="bi bi-pencil-square me-2 text-warning"></i>Editar Zapatilla: ${producto.nombre}`;
+
+    const btnTxt = document.getElementById('btn-guardar-texto');
+    if (btnTxt) btnTxt.innerHTML = '<i class="bi bi-check-circle me-2"></i>Actualizar Producto';
+
+    // Rellenar campos de texto y numéricos
+    const setVal = (idEl, val) => {
+        const el = document.getElementById(idEl);
+        if (el) el.value = (val !== null && val !== undefined) ? val : '';
+    };
+
+    setVal('nuevoNombre', producto.nombre);
+    setVal('nuevaCategoria', producto.categoria);
+    setVal('nuevaDescripcion', producto.descripcion);
+    setVal('nuevoPrecio', producto.precio);
+    setVal('nuevoPrecioOriginal', producto.precioOriginal || producto.precio);
+    setVal('nuevoDescuento', producto.descuento || 0);
+    setVal('nuevoStock', producto.stock ?? producto.cantidad ?? 0);
+    setVal('nuevoProveedor', producto.proveedor || '');
+
+    // Imagen principal
+    const imgPrincipal = producto.imagen || producto.imagenUrl || '';
+    setVal('nuevoImagen', imgPrincipal);
+    if (typeof actualizarPreviewProductoUrl === 'function') {
+        actualizarPreviewProductoUrl(imgPrincipal);
+    }
+
+    // Galería adicional
+    setVal('nuevasImagenes', producto.imagenes || '');
+    if (typeof actualizarPreviewGaleriaAdicionales === 'function') {
+        actualizarPreviewGaleriaAdicionales();
+    }
+
+    // Switch destacado
+    const switchDestacado = document.getElementById('nuevoDestacado');
+    if (switchDestacado) switchDestacado.checked = Boolean(producto.destacado);
+
+    // Selección de tallas
+    const tallasStr = (producto.tallas || producto.talla || '').toString();
+    const tallasArr = Array.isArray(producto.tallasDisponibles) && producto.tallasDisponibles.length > 0
+        ? producto.tallasDisponibles.map(String)
+        : tallasStr.split(',').map(t => t.trim());
+
+    document.querySelectorAll('.check-talla').forEach(cb => {
+        cb.checked = tallasArr.includes(cb.value);
+    });
+
+    // Selección de colores
+    const coloresStr = (producto.color || '').toString();
+    const coloresArr = Array.isArray(producto.colores) && producto.colores.length > 0
+        ? producto.colores.map(c => c.trim().toLowerCase())
+        : coloresStr.split(',').map(c => c.trim().toLowerCase());
+
+    document.querySelectorAll('.check-color').forEach(cb => {
+        cb.checked = coloresArr.some(c => c.includes(cb.value.toLowerCase()) || cb.value.toLowerCase().includes(c));
+    });
+
+    // Abrir modal
     const modalEl = document.getElementById('modalAgregarProducto');
     if (modalEl) {
         if (window.bootstrap && bootstrap.Modal) {
@@ -644,7 +757,10 @@ function renderizarProductos(listaProductos) {
                                     <i class="bi bi-eye me-1"></i> Ver
                                 </button>
                                 ${esAdmin ? `
-                                    <button class="btn btn-outline-danger btn-sm" onclick="eliminarProducto(${producto.id})" title="Eliminar producto">
+                                    <button class="btn btn-outline-primary btn-sm px-2 fw-semibold" onclick="abrirModalEditarProducto(${producto.id})" title="Editar producto">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm px-2" onclick="eliminarProducto(${producto.id})" title="Eliminar producto">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 ` : ''}
@@ -893,9 +1009,13 @@ function mostrarToast(msg) {
     new bootstrap.Toast(el).show();
 }
 
-// Guardar nuevo producto en la Base de Datos con múltiples tallas + descuento + destacado
+// Guardar o Actualizar producto en la Base de Datos con múltiples tallas + descuento + destacado
 window.guardarNuevoProducto = async function(event) {
     event.preventDefault();
+
+    const editIdInput = document.getElementById('editarProductoId');
+    const editId = editIdInput ? editIdInput.value.trim() : '';
+    const esEdicion = Boolean(editId);
 
     const tallasSeleccionadas = Array.from(document.querySelectorAll('.check-talla:checked'))
         .map(cb => cb.value);
@@ -954,25 +1074,38 @@ window.guardarNuevoProducto = async function(event) {
     const btn = document.getElementById('btn-guardar-producto');
     const txt = document.getElementById('btn-guardar-texto');
     if (btn) btn.disabled = true;
-    if (txt) txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+    if (txt) txt.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${esEdicion ? 'Actualizando...' : 'Guardando...'}`;
 
     try {
-        const respuesta = await fetch('/api/productos', {
-            method: 'POST',
+        const urlEndpoint = esEdicion ? `/api/productos/${editId}` : '/api/productos';
+        const metodoHttp = esEdicion ? 'PUT' : 'POST';
+
+        const respuesta = await fetch(urlEndpoint, {
+            method: metodoHttp,
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify(productoData)
         });
 
         if (respuesta.ok) {
+            const modalEl = document.getElementById('modalAgregarProducto');
+            if (modalEl && window.bootstrap && bootstrap.Modal) {
+                const modalInstancia = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstancia) modalInstancia.hide();
+            }
+
+            const mensajeExito = esEdicion
+                ? '🎉 ¡Producto actualizado correctamente! Recargando...'
+                : '🎉 ¡Producto guardado correctamente! Recargando...';
+
             if (window.mostrarToastGlobal) {
-                window.mostrarToastGlobal('🎉 Producto guardado correctamente. Recargando...', 'success');
+                window.mostrarToastGlobal(mensajeExito, 'success');
             } else {
-                alert('¡ÉXITO! Producto guardado correctamente.');
+                alert(mensajeExito);
             }
             setTimeout(() => location.reload(), 1200);
         } else {
-            let msj = 'Error al guardar el producto.';
+            let msj = esEdicion ? 'Error al actualizar el producto.' : 'Error al guardar el producto.';
             try {
                 const json = await respuesta.json().catch(() => null);
                 if (json) {
@@ -998,7 +1131,11 @@ window.guardarNuevoProducto = async function(event) {
         }
     } finally {
         if (btn) btn.disabled = false;
-        if (txt) txt.innerHTML = '<i class="bi bi-save me-2"></i>Guardar en Base de Datos';
+        if (txt) {
+            txt.innerHTML = esEdicion 
+                ? '<i class="bi bi-check-circle me-2"></i>Actualizar Producto' 
+                : '<i class="bi bi-save me-2"></i>Guardar en Base de Datos';
+        }
     }
 };
 
@@ -1079,6 +1216,19 @@ window.actualizarPreviewProductoUrl = function(url) {
         if (previewContainer) previewContainer.classList.add('d-none');
         if (zonaSubida) zonaSubida.classList.remove('d-none');
     }
+};
+
+window.actualizarPreviewGaleriaAdicionales = function() {
+    const inputNuevas = document.getElementById('nuevasImagenes');
+    const previewGaleria = document.getElementById('previewGaleriaAdicionales');
+    if (!previewGaleria || !inputNuevas) return;
+    const urlsActuales = (inputNuevas.value || '').split(',').map(s => s.trim()).filter(Boolean);
+    previewGaleria.innerHTML = urlsActuales.map((u, i) => `
+        <div class="position-relative d-inline-block">
+            <img src="${u}" class="rounded-2 border shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+            <button type="button" class="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 10px; transform: translate(30%, -30%);" onclick="quitarFotoAdicional(${i})">×</button>
+        </div>
+    `).join('');
 };
 
 window.subirFotosAdicionalesArchivo = async function(input) {
@@ -1618,10 +1768,7 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
     }
 
     const sidebarNombre = document.getElementById('sidebar-nombre');
-    const sidebarRol = document.getElementById('sidebar-rol');
-    
     if (sidebarNombre) sidebarNombre.textContent = usuario.nombre || 'Mi Cuenta';
-    if (sidebarRol) sidebarRol.textContent = usuario.rol || 'CLIENTE';
 
     const listaEnlaces = document.getElementById('sidebar-lista-enlaces');
     if (listaEnlaces) {
@@ -1629,6 +1776,7 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
             <li><a href="index.html"><i class="bi bi-house-door"></i> Inicio Tienda</a></li>
             <li><a href="perfil.html"><i class="bi bi-person"></i> Mi Perfil</a></li>
             <li><a href="pedidos.html"><i class="bi bi-box-seam"></i> Mis Pedidos</a></li>
+            <li><a href="javascript:void(0)" onclick="toggleModoOscuro()"><i class="bi bi-moon-stars-fill text-warning"></i> Modo Oscuro / Claro</a></li>
         `;
         if (esAdmin || esOperario) {
             htmlEnlaces += `
