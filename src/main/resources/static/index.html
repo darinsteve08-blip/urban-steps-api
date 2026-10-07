@@ -48,6 +48,22 @@
                         <i class="bi bi-cart3 me-1"></i> Carrito (<span id="contador-carrito" class="fw-bold">0</span>)
                     </a>
                 </div>
+                <script>
+                    (function() {
+                        try {
+                            var raw = localStorage.getItem('usuario');
+                            if (raw) {
+                                var u = JSON.parse(raw);
+                                if (u && (u.email || u.nombre)) {
+                                    var btn = document.getElementById('btnLoginNavbar');
+                                    if (btn) {
+                                        btn.outerHTML = '<button id="btnLoginNavbar" class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuUsuarioLateral"><i class="bi bi-list me-1"></i> Menú</button>';
+                                    }
+                                }
+                            }
+                        } catch(e){}
+                    })();
+                </script>
             </div>
         </div>
     </nav>
@@ -589,7 +605,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/app.js?v=3.1"></script>
+    <script src="js/app.js?v=3.3"></script>
 
     <!-- Menú Lateral Elegante -->
     <div class="offcanvas offcanvas-end sidebar-elegante" tabindex="-1" id="menuUsuarioLateral">

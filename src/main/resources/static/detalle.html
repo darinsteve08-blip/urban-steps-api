@@ -819,7 +819,7 @@ async function verificarSesionDetalle() {
         }
     } catch(e){}
     try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
             usuarioSesionDetalle = await res.json();
             try { localStorage.setItem('usuario', JSON.stringify(usuarioSesionDetalle)); } catch(e){}

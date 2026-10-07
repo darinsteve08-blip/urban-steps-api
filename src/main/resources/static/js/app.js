@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.addEventListener('pageshow', () => {
+    inicializarSesion();
+    verificarAccesoAdminUI();
+    actualizarContadorCarrito();
+});
+
 // ==========================================
 // MANEJO SEGURO DE SESIÓN
 // ==========================================
@@ -49,15 +55,23 @@ function obtenerUsuarioSesion() {
 }
 
 function inicializarSesion() {
-    // Por defecto la interfaz inicia en modo invitado limpio.
-    // La verdadera confirmación de autenticación vendrá de verificarSesion() vía el backend.
-    window.usuarioEsAdminGlobal = false;
-    window.usuarioActual = null;
-
-    const estaEnPerfil = window.location.pathname.includes('perfil.html');
     const usuario = obtenerUsuarioSesion();
-    if (!usuario && estaEnPerfil) {
-        window.location.href = 'login.html';
+    if (usuario) {
+        window.usuarioActual = usuario;
+        const rol = (usuario.rol || '').toUpperCase();
+        const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
+        const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
+        window.usuarioEsAdminGlobal = esAdmin || esOperario;
+        if (typeof actualizarInterfazUsuario === 'function') {
+            actualizarInterfazUsuario(usuario, esAdmin, esOperario);
+        }
+    } else {
+        window.usuarioEsAdminGlobal = false;
+        window.usuarioActual = null;
+        const estaEnPerfil = window.location.pathname.includes('perfil.html');
+        if (estaEnPerfil) {
+            window.location.href = 'login.html';
+        }
     }
 }
 
@@ -1748,12 +1762,30 @@ async function verificarSesion() {
 
             actualizarInterfazUsuario(usuario, esAdmin, esOperario);
         } else {
-            console.log("No hay sesión activa (401 / No autenticado)");
-            actualizarInterfazInvitado();
+            const usuarioLocal = obtenerUsuarioSesion();
+            if (usuarioLocal) {
+                const rol = (usuarioLocal.rol || '').toUpperCase();
+                const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
+                const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
+                window.usuarioEsAdminGlobal = esAdmin || esOperario;
+                window.usuarioActual = usuarioLocal;
+                actualizarInterfazUsuario(usuarioLocal, esAdmin, esOperario);
+            } else {
+                console.log("No hay sesión activa (No autenticado)");
+                actualizarInterfazInvitado();
+            }
         }
     } catch (error) {
-        console.error("Error al verificar sesión:", error);
-        actualizarInterfazInvitado();
+        console.warn("Backend no disponible temporalmente, manteniendo sesión local:", error);
+        const usuarioLocal = obtenerUsuarioSesion();
+        if (usuarioLocal) {
+            const rol = (usuarioLocal.rol || '').toUpperCase();
+            const esAdmin = rol === 'ROLE_ADMIN' || rol === 'ADMIN';
+            const esOperario = rol === 'ROLE_OPERARIO' || rol === 'OPERARIO';
+            window.usuarioEsAdminGlobal = esAdmin || esOperario;
+            window.usuarioActual = usuarioLocal;
+            actualizarInterfazUsuario(usuarioLocal, esAdmin, esOperario);
+        }
     }
 }
 
@@ -1796,6 +1828,12 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
 
     const btnPanelAdmin = document.getElementById('btnPanelAdmin');
     if (btnPanelAdmin) btnPanelAdmin.style.display = 'none';
+
+    const btnMiPerfil = document.getElementById('btnMiPerfil');
+    if (btnMiPerfil) btnMiPerfil.style.display = 'none';
+
+    const btnCerrarSesionNav = document.getElementById('btnCerrarSesionNav');
+    if (btnCerrarSesionNav) btnCerrarSesionNav.style.display = 'none';
 
     const btnAgregarProducto = document.getElementById('btnAgregarProducto');
     if (btnAgregarProducto) {
