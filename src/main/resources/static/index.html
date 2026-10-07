@@ -106,83 +106,103 @@
         </div>
     </div>
 
-    <div class="container py-5" id="catalogo">
-        <div class="row mb-4 align-items-center g-3">
-            <div class="col-md-6 d-flex align-items-center gap-3 flex-wrap">
-                <h2 class="fw-bold mb-0">Catálogo Disponible</h2>
-                <button id="btnAgregarProducto" style="display: none;" onclick="verificarAccesoAdmin(event)" class="btn btn-dark btn-sm rounded-pill px-3 py-2">
-                    <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+    <div class="container py-4" id="catalogo">
+        <!-- Encabezado compacto del catálogo -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <h3 class="fw-bold mb-0 fs-4">Catálogo</h3>
+                <span id="contador-productos" class="badge bg-light text-dark border py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.75rem;">0 productos</span>
+                <button id="btnAgregarProducto" style="display: none;" onclick="verificarAccesoAdmin(event)" class="btn btn-dark btn-sm rounded-pill px-3 py-1">
+                    <i class="bi bi-plus-lg me-1"></i> Nuevo
                 </button>
-                <span id="contador-productos" class="badge bg-light text-dark border py-2 px-3 rounded-pill fw-semibold">0 productos</span>
             </div>
-            <div class="col-md-6 d-flex gap-2">
-                <input type="text" id="input-buscar-tienda" class="form-control rounded-pill px-4" placeholder="🔍 Buscar zapatillas por nombre o descripción..." onkeyup="filtrarTienda()">
-                <select id="select-ordenar" class="form-select rounded-pill fw-semibold" style="max-width:220px;" onchange="ordenarProductos(this.value)">
-                    <option value="FECHA_DESC">🔻 Nuevos primero</option>
-                    <option value="PRECIO_ASC">💰 Precio: menor</option>
-                    <option value="PRECIO_DESC">💰 Precio: mayor</option>
+            
+            <!-- Acciones rápidas: Botón Filtros (colapsable) y Selector de Orden -->
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1 shadow-sm" type="button" id="btnToggleFiltros" data-bs-toggle="collapse" data-bs-target="#panelFiltrosAvanzados" aria-expanded="false" aria-controls="panelFiltrosAvanzados">
+                    <i class="bi bi-sliders"></i>
+                    <span>Filtros</span>
+                    <span id="badge-filtros-activos" class="badge bg-danger rounded-pill d-none ms-1" style="font-size: 0.7rem;">0</span>
+                </button>
+                <select id="select-ordenar" class="form-select form-select-sm rounded-pill fw-semibold shadow-sm" style="width: auto; min-width: 140px;" onchange="ordenarProductos(this.value)">
+                    <option value="FECHA_DESC">🔻 Nuevos</option>
+                    <option value="PRECIO_ASC">💰 Menor precio</option>
+                    <option value="PRECIO_DESC">💰 Mayor precio</option>
                     <option value="NOMBRE_ASC">🔤 A → Z</option>
                     <option value="STOCK_ASC">📦 Poco stock</option>
                 </select>
             </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-2 mb-4" id="botones-categorias">
-            <button class="btn btn-dark btn-sm rounded-pill px-4 py-2 active fw-semibold" onclick="filtrarCategoria('TODOS', this)">🔥 Todas</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Urbana', this)">🏙️ Urbanas</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Deportiva', this)">⚽ Deportivas</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Casual', this)">👟 Casuales</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Botas', this)">🥾 Botas & Botines</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Skate', this)">🛹 Skate & Streetwear</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Running', this)">🏃 Running</button>
-            <button class="btn btn-outline-dark btn-sm rounded-pill px-4 py-2 fw-semibold" onclick="filtrarCategoria('Edicion Especial', this)">👑 Edición Especial</button>
+        <!-- Buscador compacto con icono integrado -->
+        <div class="mb-3">
+            <div class="input-group shadow-sm rounded-pill overflow-hidden border">
+                <span class="input-group-text bg-white border-0 ps-3 pe-2 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="input-buscar-tienda" class="form-control border-0 py-2 pe-3" placeholder="Buscar zapatillas por modelo, marca o estilo..." onkeyup="filtrarTienda()">
+            </div>
         </div>
 
-        <!-- Filtros Rápidos Avanzados: Talla y Rango de Precios -->
-        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-            <div class="row g-3 align-items-center">
-                <!-- Filtro por Talla -->
-                <div class="col-md-4 col-sm-6">
-                    <label class="form-label small fw-bold text-muted mb-1">
-                        <i class="bi bi-rulers me-1 text-danger"></i>Filtrar por Talla:
-                    </label>
-                    <select id="filtro-talla" class="form-select rounded-pill fw-semibold" onchange="aplicarFiltrosProductos()">
-                        <option value="TODAS">👟 Todas las tallas</option>
-                        <option value="36">Talla 36 (US 4)</option>
-                        <option value="37">Talla 37 (US 5)</option>
-                        <option value="38">Talla 38 (US 6)</option>
-                        <option value="39">Talla 39 (US 7)</option>
-                        <option value="40">Talla 40 (US 8)</option>
-                        <option value="41">Talla 41 (US 9)</option>
-                        <option value="42">Talla 42 (US 10)</option>
-                        <option value="43">Talla 43 (US 11)</option>
-                        <option value="44">Talla 44 (US 12)</option>
-                        <option value="45">Talla 45 (US 13)</option>
-                    </select>
-                </div>
+        <!-- Categorías en barra deslizable horizontalmente (estilo app móvil, sin saturar la pantalla) -->
+        <div class="d-flex flex-nowrap gap-2 mb-3" id="botones-categorias">
+            <button class="btn btn-dark btn-sm rounded-pill px-3 py-1 active fw-semibold" onclick="filtrarCategoria('TODOS', this)">🔥 Todas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Urbana', this)">🏙️ Urbanas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Deportiva', this)">⚽ Deportivas</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Casual', this)">👟 Casuales</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Botas', this)">🥾 Botas & Botines</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Skate', this)">🛹 Skate & Streetwear</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Running', this)">🏃 Running</button>
+            <button class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1 fw-semibold" onclick="filtrarCategoria('Edicion Especial', this)">👑 Edición Especial</button>
+        </div>
 
-                <!-- Filtro por Rango de Precio (Slider) -->
-                <div class="col-md-5 col-sm-6">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label class="form-label small fw-bold text-muted mb-0">
-                            <i class="bi bi-tag-fill text-danger me-1"></i>Precio Máximo:
+        <!-- Panel Colapsable de Filtros Avanzados (Talla y Rango de Precios) -->
+        <div class="collapse mb-4" id="panelFiltrosAvanzados">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                <div class="row g-3 align-items-center">
+                    <!-- Filtro por Talla -->
+                    <div class="col-md-4 col-sm-6">
+                        <label class="form-label small fw-bold text-muted mb-1">
+                            <i class="bi bi-rulers me-1 text-danger"></i>Filtrar por Talla:
                         </label>
-                        <span id="valor-precio-filtro" class="badge bg-dark fw-bold px-3 py-1 rounded-pill">Sin límite</span>
+                        <select id="filtro-talla" class="form-select rounded-pill fw-semibold" onchange="aplicarFiltrosProductos()">
+                            <option value="TODAS">👟 Todas las tallas</option>
+                            <option value="36">Talla 36 (US 4)</option>
+                            <option value="37">Talla 37 (US 5)</option>
+                            <option value="38">Talla 38 (US 6)</option>
+                            <option value="39">Talla 39 (US 7)</option>
+                            <option value="40">Talla 40 (US 8)</option>
+                            <option value="41">Talla 41 (US 9)</option>
+                            <option value="42">Talla 42 (US 10)</option>
+                            <option value="43">Talla 43 (US 11)</option>
+                            <option value="44">Talla 44 (US 12)</option>
+                            <option value="45">Talla 45 (US 13)</option>
+                        </select>
                     </div>
-                    <input type="range" class="form-range" id="filtro-precio-slider" min="100000" max="800000" step="25000" value="800000"
-                        oninput="actualizarLabelPrecio(this.value); aplicarFiltrosProductos()">
-                    <div class="d-flex justify-content-between text-muted" style="font-size: 11px;">
-                        <span>$100.000</span>
-                        <span>$450.000</span>
-                        <span>$800.000+ (Todos)</span>
-                    </div>
-                </div>
 
-                <!-- Botón de Limpiar Filtros -->
-                <div class="col-md-3 col-12 d-flex align-items-end justify-content-md-end">
-                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 w-100 fw-semibold" onclick="limpiarFiltrosAvanzados()">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar Filtros
-                    </button>
+                    <!-- Filtro por Rango de Precio (Slider) -->
+                    <div class="col-md-5 col-sm-6">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold text-muted mb-0">
+                                <i class="bi bi-tag-fill text-danger me-1"></i>Precio Máximo:
+                            </label>
+                            <span id="valor-precio-filtro" class="badge bg-dark fw-bold px-3 py-1 rounded-pill">Sin límite</span>
+                        </div>
+                        <input type="range" class="form-range" id="filtro-precio-slider" min="100000" max="800000" step="25000" value="800000"
+                            oninput="actualizarLabelPrecio(this.value); aplicarFiltrosProductos()">
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 11px;">
+                            <span>$100.000</span>
+                            <span>$450.000</span>
+                            <span>$800.000+ (Todos)</span>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Limpiar Filtros -->
+                    <div class="col-md-3 col-12 d-flex align-items-end justify-content-md-end">
+                        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 w-100 fw-semibold" onclick="limpiarFiltrosAvanzados()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar Filtros
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -215,7 +215,10 @@ function aplicarFiltrosProductos() {
     // 3. Filtro por Talla
     const selectTalla = document.getElementById('filtro-talla');
     const tallaFiltro = selectTalla ? selectTalla.value : 'TODAS';
+    let cantFiltrosAvanzados = 0;
+
     if (tallaFiltro && tallaFiltro !== 'TODAS') {
+        cantFiltrosAvanzados++;
         listaFiltrada = listaFiltrada.filter(p => {
             if (Array.isArray(p.tallasDisponibles) && p.tallasDisponibles.length > 0) {
                 return p.tallasDisponibles.some(t => String(t).trim() === String(tallaFiltro));
@@ -236,12 +239,33 @@ function aplicarFiltrosProductos() {
         const valMax = Number(sliderPrecio.value);
         const maxPermitido = Number(sliderPrecio.max || 800000);
         if (valMax < maxPermitido) {
+            cantFiltrosAvanzados++;
             listaFiltrada = listaFiltrada.filter(p => {
                 const precioFinal = (p.descuento > 0)
                     ? (p.precio * (1 - p.descuento / 100))
                     : p.precio;
                 return precioFinal <= valMax;
             });
+        }
+    }
+
+    // Actualizar indicador de filtros avanzados activos
+    const badgeFiltros = document.getElementById('badge-filtros-activos');
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    if (badgeFiltros) {
+        if (cantFiltrosAvanzados > 0) {
+            badgeFiltros.textContent = cantFiltrosAvanzados;
+            badgeFiltros.classList.remove('d-none');
+            if (btnToggleFiltros) {
+                btnToggleFiltros.classList.remove('btn-outline-dark');
+                btnToggleFiltros.classList.add('btn-dark');
+            }
+        } else {
+            badgeFiltros.classList.add('d-none');
+            if (btnToggleFiltros) {
+                btnToggleFiltros.classList.remove('btn-dark');
+                btnToggleFiltros.classList.add('btn-outline-dark');
+            }
         }
     }
 
