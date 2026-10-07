@@ -1803,11 +1803,6 @@ function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
     }
 }
 window.actualizarInterfazUsuario = actualizarInterfazUsuario;
-window.abrirModalNuevoProducto = function() {
-    if (typeof verificarAccesoAdmin === 'function') {
-        verificarAccesoAdmin();
-    }
-};
 
 function actualizarInterfazInvitado() {
     window.usuarioEsAdminGlobal = false;
