@@ -1608,93 +1608,55 @@ async function verificarSesion() {
 }
 
 function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
-    // 1. Reemplazar el botón de Iniciar Sesión por el dropdown del usuario
-    const contenedorExistente = document.getElementById('dropdownUsuarioNav') || document.getElementById('btnLoginNavbar');
-    if (contenedorExistente) {
-        const nombreMostrar = usuario.nombre || usuario.email || 'Mi Cuenta';
-        const inicial = nombreMostrar.charAt(0).toUpperCase();
-
-        contenedorExistente.outerHTML = `
-            <div class="dropdown" id="dropdownUsuarioNav">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="d-flex align-items-center justify-content-center fw-bold text-white rounded-circle"
-                        style="width:26px;height:26px;font-size:12px;background:linear-gradient(135deg,#FF5722,#dc2626);">
-                        ${inicial}
-                    </span>
-                    <span class="fw-semibold">${nombreMostrar.split(' ')[0]}</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;min-width:200px;">
-                    <li class="px-3 pt-2 pb-1">
-                        <div class="fw-bold" style="font-size:14px;">${nombreMostrar}</div>
-                        <div class="text-muted" style="font-size:12px;">${usuario.email || ''}</div>
-                    </li>
-                    <li><hr class="dropdown-divider my-1"></li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="perfil.html">
-                            <i class="bi bi-person-circle text-dark"></i>
-                            <span>Mi Perfil</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="perfil.html#favoritos">
-                            <i class="bi bi-heart-fill text-danger"></i>
-                            <span>Mis Favoritos</span>
-                        </a>
-                    </li>
-                    ${(esAdmin || esOperario) ? `
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="pedidos.html">
-                            <i class="bi bi-receipt text-secondary"></i>
-                            <span>Gestión Pedidos</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="usuarios.html">
-                            <i class="bi bi-people text-secondary"></i>
-                            <span>Gestión Usuarios</span>
-                        </a>
-                    </li>` : `
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="pedidos.html">
-                            <i class="bi bi-bag-check text-secondary"></i>
-                            <span>Mis Pedidos</span>
-                        </a>
-                    </li>`}
-                    <li><hr class="dropdown-divider my-1"></li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold" href="#" onclick="cerrarSesion(event)">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Cerrar Sesión</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+    const btnLogin = document.getElementById('btnLoginNavbar');
+    if (btnLogin) {
+        btnLogin.outerHTML = `
+            <button class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuUsuarioLateral">
+                <i class="bi bi-list me-1"></i> Menú | ${usuario.nombre || usuario.email.split('@')[0]}
+            </button>
         `;
     }
 
-    // 2. Ocultar botones de Mi Perfil y Cerrar Sesión separados (ya incluidos en el dropdown)
-    const btnMiPerfil = document.getElementById('btnMiPerfil');
-    if (btnMiPerfil) btnMiPerfil.style.display = 'none';
+    const sidebarNombre = document.getElementById('sidebar-nombre');
+    const sidebarRol = document.getElementById('sidebar-rol');
+    
+    if (sidebarNombre) sidebarNombre.textContent = usuario.nombre || 'Mi Cuenta';
+    if (sidebarRol) sidebarRol.textContent = usuario.rol || 'CLIENTE';
 
-    const btnCerrarSesion = document.getElementById('btnCerrarSesionNav');
-    if (btnCerrarSesion) btnCerrarSesion.style.display = 'none';
-
-    // 3. Mostrar Panel de Administración si es Admin u Operario
-    const btnPanelAdmin = document.getElementById('btnPanelAdmin');
-    if (btnPanelAdmin) {
-        btnPanelAdmin.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
+    const listaEnlaces = document.getElementById('sidebar-lista-enlaces');
+    if (listaEnlaces) {
+        let htmlEnlaces = `
+            <li><a href="index.html"><i class="bi bi-house-door"></i> Inicio Tienda</a></li>
+            <li><a href="perfil.html"><i class="bi bi-person"></i> Mi Perfil</a></li>
+            <li><a href="pedidos.html"><i class="bi bi-box-seam"></i> Mis Pedidos</a></li>
+        `;
+        if (esAdmin || esOperario) {
+            htmlEnlaces += `
+                <hr class="border-secondary my-3 opacity-25">
+                <li class="px-3 mb-2 text-muted small fw-bold text-uppercase" style="letter-spacing: 1px;">Área Administrativa</li>
+                <li><a href="index.html" data-bs-dismiss="offcanvas" onclick="if(typeof abrirModalNuevoProducto === 'function') abrirModalNuevoProducto()"><i class="bi bi-plus-square"></i> Registrar Producto</a></li>
+                <li><a href="pedidos.html"><i class="bi bi-list-check"></i> Gestión de Clientes</a></li>
+                <li><a href="pedidos.html"><i class="bi bi-bar-chart"></i> Estadísticas</a></li>
+                <li><a href="#"><i class="bi bi-gear"></i> Ajustes de Tienda</a></li>
+            `;
+        }
+        listaEnlaces.innerHTML = htmlEnlaces;
     }
+
+    const btnPanelAdmin = document.getElementById('btnPanelAdmin');
+    if (btnPanelAdmin) btnPanelAdmin.style.display = 'none';
 
     const btnAgregarProducto = document.getElementById('btnAgregarProducto');
     if (btnAgregarProducto) {
         btnAgregarProducto.style.display = (esAdmin || esOperario) ? 'inline-block' : 'none';
     }
-
-    // 4. Recargar catálogo si aplica (para mostrar botones de gestión admin)
-    if (typeof cargarProductosTienda === 'function') {
-        cargarProductosTienda();
-    }
 }
+window.actualizarInterfazUsuario = actualizarInterfazUsuario;
+window.abrirModalNuevoProducto = function() {
+    if (typeof verificarAccesoAdmin === 'function') {
+        verificarAccesoAdmin();
+    }
+};
 
 function actualizarInterfazInvitado() {
     window.usuarioEsAdminGlobal = false;

@@ -746,3 +746,36 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     border: 1px solid #334155 !important;
     color: #f8fafc !important;
 }
+
+.sidebar-elegante {
+    background-color: #11101d; 
+    color: #fff;
+    border-radius: 20px 0 0 20px; 
+    width: 320px;
+    border-left: 2px solid rgba(255,255,255,0.05);
+}
+.sidebar-elegante .offcanvas-header { padding: 1.5rem; }
+.sidebar-elegante ul li { margin-bottom: 8px; }
+.sidebar-elegante ul li a {
+    display: flex; align-items: center; gap: 15px;
+    color: #fff; text-decoration: none;
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 15px; font-weight: 400;
+    transition: all 0.4s ease; white-space: nowrap;
+}
+.sidebar-elegante ul li a i { font-size: 20px; min-width: 30px; text-align: center; }
+.sidebar-elegante ul li a:hover {
+    background-color: #fff; color: #11101d;
+    transform: translateX(5px); font-weight: 500;
+}
+.btn-cerrar-sesion {
+    background-color: transparent; color: #ff4d4d;
+    border: 1px solid #ff4d4d; padding: 12px;
+    border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; gap: 10px; font-weight: 500; transition: 0.3s;
+}
+.btn-cerrar-sesion:hover { background-color: #ff4d4d; color: #fff; }
+@media (max-width: 768px) {
+    .sidebar-elegante { width: 85%; border-radius: 0; }
+}
+
