@@ -1758,11 +1758,14 @@ async function verificarSesion() {
 }
 
 function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    if (btnThemeToggle) btnThemeToggle.style.display = 'none';
+
     const btnLogin = document.getElementById('btnLoginNavbar');
     if (btnLogin) {
         btnLogin.outerHTML = `
             <button class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuUsuarioLateral">
-                <i class="bi bi-list me-1"></i> Menú | ${usuario.nombre || usuario.email.split('@')[0]}
+                <i class="bi bi-list me-1"></i> Menú
             </button>
         `;
     }
