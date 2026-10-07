@@ -779,3 +779,10 @@ input.form-control:focus, select.form-select:focus, textarea.form-control:focus 
     .sidebar-elegante { width: 85%; border-radius: 0; }
 }
 
+/* Ocultar botón de tema del navbar superior (ahora integrado dentro del menú lateral) */
+#navbarNav .btn-theme-toggle,
+.navbar .btn-theme-toggle,
+.navbar #btn-theme-toggle {
+    display: none !important;
+    visibility: hidden !important;
+}

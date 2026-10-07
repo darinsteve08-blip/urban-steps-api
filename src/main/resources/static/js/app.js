@@ -1758,13 +1758,13 @@ async function verificarSesion() {
 }
 
 function actualizarInterfazUsuario(usuario, esAdmin, esOperario) {
-    const btnThemeToggle = document.getElementById('btn-theme-toggle');
-    if (btnThemeToggle) btnThemeToggle.style.display = 'none';
+    // Remover botón exterior de modo oscuro en navbar (ahora está en el menú lateral)
+    document.querySelectorAll('.navbar .btn-theme-toggle, #navbarNav .btn-theme-toggle, #btn-theme-toggle').forEach(el => el.remove());
 
-    const btnLogin = document.getElementById('btnLoginNavbar');
+    const btnLogin = document.getElementById('btnLoginNavbar') || document.querySelector('[data-bs-target="#menuUsuarioLateral"]');
     if (btnLogin) {
         btnLogin.outerHTML = `
-            <button class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuUsuarioLateral">
+            <button id="btnLoginNavbar" class="btn btn-outline-light btn-sm px-3 rounded-pill fw-semibold shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuUsuarioLateral">
                 <i class="bi bi-list me-1"></i> Menú
             </button>
         `;
