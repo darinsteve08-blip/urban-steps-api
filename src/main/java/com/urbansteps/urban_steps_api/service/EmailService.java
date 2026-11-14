@@ -13,6 +13,15 @@ import org.springframework.stereotype.Service;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class EmailService {
@@ -25,9 +34,79 @@ public class EmailService {
 
     private final NumberFormat formatoMoneda = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
 
+    // ---- Almacén temporal de códigos de recuperación (email → código) ----
+    private final ConcurrentHashMap<String, String> codigosRecuperacion = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     private boolean isSmtpConfigurado() {
         return mailSender != null && remitente != null && !remitente.trim().isEmpty();
     }
+
+    // ---- Recuperación de contraseña ----
+
+    /**
+     * Genera un código numérico de 6 dígitos, lo almacena en memoria durante 10 minutos
+     * y lo envía al correo del usuario.
+     * Devuelve el código generado (útil para pruebas cuando SMTP no está configurado).
+     */
+    public String generarYEnviarCodigoRecuperacion(String email, String nombreUsuario) {
+        String codigo = String.format("%06d", (int) (Math.random() * 1_000_000));
+        codigosRecuperacion.put(email.toLowerCase(), codigo);
+
+        // El código expira automáticamente en 10 minutos
+        scheduler.schedule(() -> codigosRecuperacion.remove(email.toLowerCase()), 10, TimeUnit.MINUTES);
+
+        String asunto = "Código de recuperación de contraseña - Urban Steps";
+        String html = construirHtmlCodigoRecuperacion(nombreUsuario, codigo);
+        enviarHtml(email, asunto, html, "Código recuperación contraseña");
+
+        System.out.println(">>> [CÓDIGO RECUPERACIÓN] " + email + " → " + codigo);
+        return codigo;
+    }
+
+    /**
+     * Verifica si el código proporcionado es correcto para el email dado.
+     */
+    public boolean verificarCodigo(String email, String codigo) {
+        String codigoGuardado = codigosRecuperacion.get(email.toLowerCase());
+        return codigoGuardado != null && codigoGuardado.equals(codigo.trim());
+    }
+
+    /**
+     * Elimina el código de recuperación del almacén (después de usarlo).
+     */
+    public void invalidarCodigo(String email) {
+        codigosRecuperacion.remove(email.toLowerCase());
+    }
+
+    private String construirHtmlCodigoRecuperacion(String nombre, String codigo) {
+        return "<!DOCTYPE html>" +
+            "<html><head><meta charset='UTF-8'></head>" +
+            "<body style='font-family: Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b;'>" +
+            "  <div style='max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);'>" +
+            "    <div style='background: #111827; padding: 28px; text-align: center; border-bottom: 4px solid #FF5722;'>" +
+            "      <h1 style='margin: 0; color: #ffffff; font-size: 26px; font-weight: bold;'>Urban<span style='color: #FF5722;'>Steps</span></h1>" +
+            "      <p style='margin: 6px 0 0 0; color: #94a3b8; font-size: 14px;'>Tu tienda de zapatillas favorita</p>" +
+            "    </div>" +
+            "    <div style='padding: 36px 30px; text-align: center;'>" +
+            "      <div style='font-size: 48px; margin-bottom: 12px;'>🔑</div>" +
+            "      <h2 style='color: #111827; margin-top: 0; font-size: 22px;'>Recupera tu contraseña</h2>" +
+            "      <p style='color: #475569; font-size: 15px; line-height: 1.6;'>Hola <strong>" + nombre + "</strong>, recibimos una solicitud para restablecer tu contraseña.</p>" +
+            "      <p style='color: #475569; font-size: 15px;'>Usa este código de verificación:</p>" +
+            "      <div style='background: #f1f5f9; border: 2px dashed #FF5722; border-radius: 12px; padding: 20px; margin: 24px 0; display: inline-block; min-width: 220px;'>" +
+            "        <span style='font-size: 42px; font-weight: bold; letter-spacing: 10px; color: #111827; font-family: monospace;'>" + codigo + "</span>" +
+            "      </div>" +
+            "      <p style='color: #64748b; font-size: 13px;'>⏳ Este código es válido por <strong>10 minutos</strong>.</p>" +
+            "      <p style='color: #94a3b8; font-size: 12px; margin-top: 24px;'>Si no solicitaste cambiar tu contraseña, ignora este correo. Tu cuenta sigue segura.</p>" +
+            "    </div>" +
+            "    <div style='background: #f8fafc; padding: 16px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0;'>" +
+            "      Urban Steps Colombia · Soporte WhatsApp: 313 804 4913" +
+            "    </div>" +
+            "  </div>" +
+            "</body></html>";
+    }
+
+    // ---- Pedidos ----
 
     @Async
     public void enviarConfirmacionPedido(Pedido pedido) {

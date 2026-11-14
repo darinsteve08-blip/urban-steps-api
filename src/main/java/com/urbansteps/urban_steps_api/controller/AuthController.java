@@ -2,6 +2,7 @@ package com.urbansteps.urban_steps_api.controller;
 
 import com.urbansteps.urban_steps_api.model.Usuario;
 import com.urbansteps.urban_steps_api.repository.UsuarioRepository;
+import com.urbansteps.urban_steps_api.service.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class AuthController {
 
     @Autowired
     private org.springframework.security.web.context.SecurityContextRepository securityContextRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     @PostMapping("/registro")
     public ResponseEntity<?> registrarCliente(@RequestBody Usuario nuevoUsuario) {
@@ -155,11 +159,65 @@ public class AuthController {
             return ResponseEntity.badRequest().body("El correo es obligatorio.");
         }
 
-        if (!usuarioRepository.existsByEmail(email)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No existe una cuenta registrada con ese correo.");
+        email = email.trim().toLowerCase();
+        Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
+
+        if (usuario == null) {
+            // Por seguridad respondemos igual aunque no exista el correo
+            return ResponseEntity.ok("Si el correo está registrado, recibirás el código en breve.");
         }
 
-        return ResponseEntity.ok("Se han enviado las instrucciones de recuperación a " + email);
+        emailService.generarYEnviarCodigoRecuperacion(email, usuario.getNombre());
+        return ResponseEntity.ok("Si el correo está registrado, recibirás el código en breve.");
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<String> verificarCodigoReset(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String codigo = request.get("codigo");
+
+        if (email == null || codigo == null || email.trim().isEmpty() || codigo.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Correo y código son obligatorios.");
+        }
+
+        if (!emailService.verificarCodigo(email.trim().toLowerCase(), codigo.trim())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Código incorrecto o expirado.");
+        }
+
+        return ResponseEntity.ok("Código verificado correctamente.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String codigo = request.get("codigo");
+        String nuevaPassword = request.get("nuevaPassword");
+
+        if (email == null || codigo == null || nuevaPassword == null
+                || email.trim().isEmpty() || codigo.trim().isEmpty() || nuevaPassword.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Todos los campos son obligatorios.");
+        }
+
+        if (nuevaPassword.trim().length() < 6) {
+            return ResponseEntity.badRequest().body("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+
+        email = email.trim().toLowerCase();
+
+        if (!emailService.verificarCodigo(email, codigo.trim())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Código incorrecto o expirado. Vuelve a solicitar el código.");
+        }
+
+        Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword.trim()));
+        usuarioRepository.save(usuario);
+        emailService.invalidarCodigo(email);
+
+        return ResponseEntity.ok("¡Contraseña actualizada con éxito! Ya puedes iniciar sesión.");
     }
 
     @PutMapping("/perfil")

@@ -391,18 +391,80 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 20px;">
                 <div class="modal-header text-white" style="background: linear-gradient(135deg, #111827, #1f2937); border-top-left-radius: 20px; border-top-right-radius: 20px;">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-key me-2"></i>Restablecer Contraseña</h5>
+                    <h5 class="modal-title fw-bold" id="tituloModalReset"><i class="bi bi-key me-2"></i>Restablecer Contraseña</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <form id="formRestablecerPassword" onsubmit="ejecutarRestablecerPassword(event)">
-                        <p class="text-muted small mb-3">Ingresa tu correo y te enviaremos las instrucciones para restablecer tu contraseña.</p>
-                        <div class="mb-3">
-                            <label for="emailRestablecer" class="form-label fw-medium small">Correo Electrónico</label>
-                            <input type="email" class="form-control input-auth" id="emailRestablecer" placeholder="tu@correo.com" required>
+
+                    <!-- PASO 1: Ingresar correo -->
+                    <div id="resetPaso1">
+                        <p class="text-muted small mb-3">Ingresa tu correo y te enviaremos un código de 6 dígitos para restablecer tu contraseña.</p>
+                        <form id="formRestablecerPassword" onsubmit="resetPaso1Enviar(event)">
+                            <div class="mb-3">
+                                <label for="emailRestablecer" class="form-label fw-medium small">Correo Electrónico</label>
+                                <input type="email" class="form-control input-auth" id="emailRestablecer" placeholder="tu@correo.com" required>
+                            </div>
+                            <button type="submit" id="btnResetPaso1" class="btn btn-primary-auth w-100">
+                                <span id="txtResetPaso1"><i class="bi bi-send me-2"></i>Enviar código</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- PASO 2: Verificar código -->
+                    <div id="resetPaso2" style="display:none;">
+                        <p class="text-muted small mb-3">Ingresa el código de 6 dígitos que enviamos a tu correo. <strong>Válido por 10 minutos.</strong></p>
+                        <form id="formVerificarCodigo" onsubmit="resetPaso2Verificar(event)">
+                            <div class="mb-3">
+                                <label for="codigoReset" class="form-label fw-medium small">Código de verificación</label>
+                                <input type="text" class="form-control input-auth text-center fw-bold fs-4 letter-spacing-3"
+                                    id="codigoReset" placeholder="000000" maxlength="6" minlength="6"
+                                    pattern="[0-9]{6}" inputmode="numeric" required
+                                    style="letter-spacing: 8px; font-size: 28px !important;">
+                            </div>
+                            <button type="submit" id="btnResetPaso2" class="btn btn-primary-auth w-100">
+                                <span id="txtResetPaso2"><i class="bi bi-check-circle me-2"></i>Verificar código</span>
+                            </button>
+                        </form>
+                        <div class="text-center mt-2">
+                            <a href="javascript:void(0)" onclick="resetVolver1()" class="text-muted small text-decoration-none">
+                                <i class="bi bi-arrow-left me-1"></i>Usar otro correo
+                            </a>
                         </div>
-                        <button type="submit" class="btn btn-primary-auth w-100">Enviar instrucciones</button>
-                    </form>
+                    </div>
+
+                    <!-- PASO 3: Nueva contraseña -->
+                    <div id="resetPaso3" style="display:none;">
+                        <p class="text-muted small mb-3">¡Código verificado! Ahora crea tu nueva contraseña.</p>
+                        <form id="formNuevaPassword" onsubmit="resetPaso3Guardar(event)">
+                            <div class="mb-3">
+                                <label for="nuevaPasswordReset" class="form-label fw-medium small">Nueva Contraseña</label>
+                                <div class="position-relative">
+                                    <i class="bi bi-lock position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                    <input type="password" class="form-control input-auth ps-5" id="nuevaPasswordReset"
+                                        placeholder="Mínimo 6 caracteres" minlength="6" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmarPasswordReset" class="form-label fw-medium small">Confirmar Contraseña</label>
+                                <div class="position-relative">
+                                    <i class="bi bi-lock-fill position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                                    <input type="password" class="form-control input-auth ps-5" id="confirmarPasswordReset"
+                                        placeholder="Repite tu contraseña" minlength="6" required>
+                                </div>
+                            </div>
+                            <button type="submit" id="btnResetPaso3" class="btn btn-primary-auth w-100">
+                                <span id="txtResetPaso3"><i class="bi bi-shield-check me-2"></i>Guardar nueva contraseña</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Barra de progreso pasos -->
+                    <div class="d-flex justify-content-center gap-2 mt-3" id="resetIndicadorPasos">
+                        <div id="dot1" class="rounded-circle bg-dark" style="width:10px;height:10px;transition:all 0.3s;"></div>
+                        <div id="dot2" class="rounded-circle bg-secondary opacity-50" style="width:10px;height:10px;transition:all 0.3s;"></div>
+                        <div id="dot3" class="rounded-circle bg-secondary opacity-50" style="width:10px;height:10px;transition:all 0.3s;"></div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -479,26 +541,156 @@
         }
     }
 
-    async function ejecutarRestablecerPassword(event) {
+    // =====================================================================
+    // SISTEMA DE RECUPERACIÓN DE CONTRASEÑA EN 3 PASOS
+    // =====================================================================
+    let _resetEmail = '';
+
+    function resetActualizarDots(paso) {
+        ['dot1','dot2','dot3'].forEach(function(id, i) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (i + 1 === paso) {
+                el.classList.remove('bg-secondary', 'opacity-50');
+                el.classList.add('bg-dark');
+                el.style.width = '14px';
+                el.style.height = '14px';
+            } else {
+                el.classList.remove('bg-dark');
+                el.classList.add('bg-secondary', 'opacity-50');
+                el.style.width = '10px';
+                el.style.height = '10px';
+            }
+        });
+    }
+
+    function resetMostrarPaso(n) {
+        document.getElementById('resetPaso1').style.display = n === 1 ? '' : 'none';
+        document.getElementById('resetPaso2').style.display = n === 2 ? '' : 'none';
+        document.getElementById('resetPaso3').style.display = n === 3 ? '' : 'none';
+        resetActualizarDots(n);
+    }
+
+    function resetVolver1() {
+        resetMostrarPaso(1);
+        document.getElementById('codigoReset').value = '';
+    }
+
+    document.getElementById('modalRestablecerPassword').addEventListener('hidden.bs.modal', function() {
+        resetMostrarPaso(1);
+        document.getElementById('emailRestablecer').value = '';
+        document.getElementById('codigoReset').value = '';
+        var npwd = document.getElementById('nuevaPasswordReset');
+        var cpwd = document.getElementById('confirmarPasswordReset');
+        if (npwd) npwd.value = '';
+        if (cpwd) cpwd.value = '';
+        _resetEmail = '';
+    });
+
+    // PASO 1 — Enviar código al correo
+    async function resetPaso1Enviar(event) {
         event.preventDefault();
-        const email = document.getElementById('emailRestablecer').value;
+        var email = document.getElementById('emailRestablecer').value.trim();
+        var btn = document.getElementById('btnResetPaso1');
+        var txt = document.getElementById('txtResetPaso1');
+        btn.disabled = true;
+        txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
         try {
-            const response = await fetch('/api/auth/forgot-password', {
+            var res = await fetch('/api/auth/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email: email })
             });
-            const mensaje = await response.text();
-            if (response.ok) {
-                mostrarToastLogin(mensaje || 'Se han enviado las instrucciones a tu correo.', 'success');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalRestablecerPassword'));
-                modal.hide();
-                document.getElementById('formRestablecerPassword').reset();
+            var msg = await res.text();
+            if (res.ok) {
+                _resetEmail = email;
+                mostrarToastLogin('¡Código enviado! Revisa tu bandeja de entrada (y la carpeta de spam).', 'success');
+                resetMostrarPaso(2);
+                setTimeout(function() { document.getElementById('codigoReset').focus(); }, 200);
             } else {
-                mostrarToastLogin(`Error: ${mensaje || 'Ocurrió un error.'}`, 'error');
+                mostrarToastLogin(msg || 'Error al enviar el código.', 'error');
             }
-        } catch (error) {
+        } catch (e) {
             mostrarToastLogin('No se pudo conectar con el servidor.', 'error');
+        } finally {
+            btn.disabled = false;
+            txt.innerHTML = '<i class="bi bi-send me-2"></i>Enviar código';
+        }
+    }
+
+    // PASO 2 — Verificar el código
+    async function resetPaso2Verificar(event) {
+        event.preventDefault();
+        var codigo = document.getElementById('codigoReset').value.trim();
+        var btn = document.getElementById('btnResetPaso2');
+        var txt = document.getElementById('txtResetPaso2');
+        btn.disabled = true;
+        txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+        try {
+            var res = await fetch('/api/auth/verify-reset-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: _resetEmail, codigo: codigo })
+            });
+            var msg = await res.text();
+            if (res.ok) {
+                mostrarToastLogin('¡Código correcto!', 'success');
+                resetMostrarPaso(3);
+                setTimeout(function() { document.getElementById('nuevaPasswordReset').focus(); }, 200);
+            } else {
+                mostrarToastLogin(msg || 'Código incorrecto o expirado.', 'error');
+            }
+        } catch (e) {
+            mostrarToastLogin('No se pudo conectar con el servidor.', 'error');
+        } finally {
+            btn.disabled = false;
+            txt.innerHTML = '<i class="bi bi-check-circle me-2"></i>Verificar código';
+        }
+    }
+
+    // PASO 3 — Guardar nueva contraseña
+    async function resetPaso3Guardar(event) {
+        event.preventDefault();
+        var nuevaPassword = document.getElementById('nuevaPasswordReset').value;
+        var confirmarPassword = document.getElementById('confirmarPasswordReset').value;
+        var codigo = document.getElementById('codigoReset').value.trim();
+
+        if (nuevaPassword !== confirmarPassword) {
+            mostrarToastLogin('Las contraseñas no coinciden.', 'error');
+            return;
+        }
+        if (nuevaPassword.length < 6) {
+            mostrarToastLogin('La contraseña debe tener al menos 6 caracteres.', 'error');
+            return;
+        }
+
+        var btn = document.getElementById('btnResetPaso3');
+        var txt = document.getElementById('txtResetPaso3');
+        btn.disabled = true;
+        txt.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+        try {
+            var res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: _resetEmail, codigo: codigo, nuevaPassword: nuevaPassword })
+            });
+            var msg = await res.text();
+            if (res.ok) {
+                mostrarToastLogin('¡Contraseña actualizada! Ya puedes iniciar sesión. 🎉', 'success');
+                var modal = bootstrap.Modal.getInstance(document.getElementById('modalRestablecerPassword'));
+                modal.hide();
+                setTimeout(function() {
+                    var emailInput = document.getElementById('email');
+                    if (emailInput) emailInput.value = _resetEmail;
+                }, 500);
+            } else {
+                mostrarToastLogin(msg || 'Error al actualizar la contraseña.', 'error');
+            }
+        } catch (e) {
+            mostrarToastLogin('No se pudo conectar con el servidor.', 'error');
+        } finally {
+            btn.disabled = false;
+            txt.innerHTML = '<i class="bi bi-shield-check me-2"></i>Guardar nueva contraseña';
         }
     }
 
